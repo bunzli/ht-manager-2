@@ -1,0 +1,158 @@
+---
+description: Project architecture — file purposes and responsibilities. Keep this file updated when adding, removing, or renaming source files.
+alwaysApply: true
+---
+
+# HT Manager — Architecture Map
+
+Full-stack TypeScript monorepo for managing a Hattrick football team. The server talks to the CHPP (Hattrick) API, persists data with Prisma/SQLite, and exposes a REST API. The React client consumes that API.
+
+## Server (`server/src/`)
+
+### Entry point
+
+| File | Responsibility |
+|---|---|
+| `index.ts` | Boots Express, wires middleware, mounts routers, starts the cron scheduler, serves the production client build. |
+
+### Routes — thin HTTP layer
+
+| File | Responsibility |
+|---|---|
+| `routes/players.ts` | Express router for `/api/players`. Parses params, delegates to `player.service`, returns JSON. |
+| `routes/marketStudies.ts` | Express router for `/api/market-studies`. Parses params, delegates to `marketStudy.service`, returns JSON. |
+
+### Services — business logic
+
+| File | Responsibility |
+|---|---|
+| `services/player.service.ts` | Player CRUD, CHPP refresh, position-score computation, position-override persistence. |
+| `services/marketStudy.service.ts` | Market study lifecycle: create, list, detail, search, bulk-update, resolve transfers. |
+| `services/transferResolver.ts` | Matches pending transfer listings to completed transfers and resolves final prices/deadlines. |
+| `services/soldPriceAggregator.ts` | Aggregates sold-player prices into chart-ready series (by age, by specialty). |
+
+### CHPP integration
+
+| File | Responsibility |
+|---|---|
+| `chpp/client.ts` | OAuth-signed HTTP client for the Hattrick CHPP API. Exposes typed methods (getPlayers, getPlayerDetails, searchTransfers, etc.). |
+| `chpp/parsers.ts` | Transforms raw CHPP XML (parsed to JS objects) into typed domain shapes. Handles Stockholm-to-UTC date conversion. |
+| `chpp/types.ts` | TypeScript interfaces for every CHPP response and sub-entity. |
+
+### Lib — shared utilities
+
+| File | Responsibility |
+|---|---|
+| `lib/asyncHandler.ts` | Wraps async Express handlers so rejected promises forward to the error middleware. |
+| `lib/routeUtils.ts` | `parseIntParam` (safe param parsing) and `errorResponse` (consistent error JSON). |
+| `lib/constants.ts` | Shared constants (`ONE_WEEK_MS`) and status enums (`TRANSFER_STATUS`, `MARKET_STUDY_STATUS`). |
+| `lib/errorMiddleware.ts` | Global Express error handler — catches unhandled exceptions and returns a uniform error response. |
+| `lib/positionRatings.ts` | HT position-skill weight coefficients; computes a 0–20 rating per position for a player. |
+
+### Jobs
+
+| File | Responsibility |
+|---|---|
+| `jobs/scheduler.ts` | Cron registry (`node-cron`). Registers and starts recurring background jobs. |
+
+---
+
+## Client (`client/src/`)
+
+### Entry & shell
+
+| File | Responsibility |
+|---|---|
+| `main.tsx` | React root: mounts `QueryClientProvider`, `BrowserRouter`, and `<App />`. |
+| `App.tsx` | Top-level layout (header, tab navigation) and route definitions. |
+
+### Pages
+
+| File | Responsibility |
+|---|---|
+| `pages/PlayersPage.tsx` | Lists squad players, triggers CHPP refresh. Uses React Query. |
+| `pages/PlayerDetailPage.tsx` | Single-player view: skills, position ratings, position-override form. Uses React Query. |
+| `pages/MarketStudiesPage.tsx` | Lists market studies, allows creating new ones. Uses React Query. |
+| `pages/MarketStudyDetailPage.tsx` | Orchestrates study detail: metrics, filters, charts, results table. Delegates to sub-components and the `useMarketStudy` hook. |
+
+### Hooks
+
+| File | Responsibility |
+|---|---|
+| `hooks/useMarketStudy.ts` | `useMarketStudyData` — fetches and caches a study, manages selected IDs and action handlers. `useStudyFilters` — filter/sort state for the results table. |
+
+### Components — market study
+
+| File | Responsibility |
+|---|---|
+| `components/market-study/StudyMetrics.tsx` | Computed metrics cards (avg price, counts, etc.) for a study. |
+| `components/market-study/StudyFilters.tsx` | Filter bar UI: status, age range, specialty dropdowns. |
+| `components/market-study/StudyCharts.tsx` | Recharts visualisations: price-by-age and price-by-specialty. |
+| `components/market-study/StudyResultsTable.tsx` | Sortable, filterable table of study transfer results with row selection. |
+
+### Components — shared / domain
+
+| File | Responsibility |
+|---|---|
+| `components/PlayerCard.tsx` | Compact player summary card (name, age, skills, TSI). |
+| `components/PlayerList.tsx` | Renders a list of `PlayerCard` items. |
+| `components/PlayerAvatar.tsx` | Composites Hattrick avatar layers into a single image. |
+| `components/SkillBar.tsx` | Horizontal bar showing a skill level with colour coding. |
+| `components/PositionRatingsCard.tsx` | Grid of position ratings with weighted-skill breakdowns. |
+| `components/TransferResultCard.tsx` | Card displaying a single transfer search result with skills. |
+| `components/MarketStudyForm.tsx` | Form for creating a new market study (skill type, min/max, age). |
+
+### Components — UI primitives
+
+| File | Responsibility |
+|---|---|
+| `components/ui/LoadingSpinner.tsx` | Reusable full-width loading spinner. |
+| `components/ui/ErrorAlert.tsx` | Reusable red error alert box. |
+| `components/ui/ActionMessage.tsx` | Feedback message for user actions (info or error variant). |
+| `components/ui/BackLink.tsx` | "← Back" navigation link. |
+
+### Lib — client utilities
+
+| File | Responsibility |
+|---|---|
+| `lib/api.ts` | Typed API client: `fetchJson`/`postJson`/`patchJson`/`deleteJson` wrappers over `fetch`. One function per endpoint. |
+| `lib/types.ts` | Shared TypeScript interfaces for API responses and domain models (`Player`, `MarketStudy`, `TransferSearchResult`, etc.). |
+| `lib/skills.ts` | Skill-level labels, colour mapping, and skill-key metadata for the HT skill system. |
+| `lib/skillTypes.ts` | `SKILL_TYPE_MAP`, `SKILL_TYPE_LABELS`, `SKILL_TYPE_TO_FIELD` — single source of truth for CHPP skill-type IDs. |
+| `lib/playerUtils.ts` | `displayName` and `hattrickPlayerUrl` — reusable player display helpers. |
+| `lib/positionRatings.ts` | Position display metadata and weight definitions (client-side mirror of server ratings). |
+| `lib/format.ts` | `formatNumber` and `formatMoney` — locale-aware number formatting. |
+
+### Storybook & test data
+
+| File | Responsibility |
+|---|---|
+| `components/mockData.ts` | Shared mock `Player` object used by Storybook stories. |
+| `components/*.stories.tsx` | Storybook stories for `PlayerCard`, `PlayerAvatar`, `PlayerList`, `SkillBar`. |
+
+---
+
+## Root config files
+
+| File | Responsibility |
+|---|---|
+| `package.json` | Monorepo root: `dev`, `build`, `lint`, `format` scripts. |
+| `eslint.config.mjs` | Root ESLint flat config with TypeScript + Prettier. |
+| `.prettierrc` | Prettier formatting rules. |
+| `.env.example` | Template for required environment variables (CHPP keys, PORT). |
+| `Dockerfile` | Multi-stage production image (build + runtime, non-root user). |
+| `docker-compose.yml` | Local development stack. |
+| `docker-compose.prod.yml` | Production overrides (volume mounts, restart policy). |
+| `.dockerignore` | Excludes node_modules, dist, .git, etc. from Docker context. |
+
+---
+
+## Conventions to preserve
+
+- **Routes are thin.** They parse HTTP input and call a service. No business logic in route files.
+- **Services own business logic.** They receive Prisma + ChppClient via dependency injection.
+- **`asyncHandler` wraps every async route.** Never use raw `try/catch` in route handlers.
+- **React Query manages server state.** Pages use `useQuery`; mutations invalidate via `queryClient`.
+- **UI primitives live in `components/ui/`.** Domain components live in `components/` or feature sub-folders.
+
+When adding a new file, update this document to include its purpose.

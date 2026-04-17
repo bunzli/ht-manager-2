@@ -1,0 +1,104 @@
+input:
+  file: "players"                       # required
+
+  version: 2.8                         # optional (default: 2.8)
+
+  actionType:                          # optional (default: view)
+    - view                             # players currently in team
+    - viewOldies                       # former players promoted from youth squad or startup squad
+    - viewOldCoaches                   # former players that are now coaches
+
+  orderBy: string                      # optional (default: PlayerNumber)
+  teamID: integer                      # optional (default: logged user's teamID)
+  includeMatchInfo: boolean            # optional (default: false)
+
+output:
+  HattrickData:
+    UserSupporterTier: supporterTier   # only available in versions 1.4-2.2, may be empty
+    UserIsSupporter: boolean
+    IsYouth: boolean                   # always false
+    ActionType: string
+    IsPlayingMatch: boolean
+
+    Team:
+      TeamID: integer
+      TeamName: string
+
+    PlayerList:
+      - Player:
+          PlayerID: integer
+          FirstName: string
+          NickName: string
+          LastName: string
+          LastName__available_in: [1.4]
+
+          Playername: string
+          PlayerNumber: integer        # 1..99
+          Age: integer
+          AgeDays: integer
+          GenderID: GenderID
+          ArrivalDate: datetime
+          OwnerNotes: string           # only visible to owner
+          TSI: integer
+          PlayerForm: SkillLevel
+          Statement: string            # HTML encoded
+          Experience: SkillLevel
+          Loyalty: SkillLevel
+          MotherClubBonus: boolean
+          Leadership: SkillLevel
+          Salary: money                # empty if player has no owner
+          IsAbroad: boolean            # empty if player has no owner; docs description is inconsistent
+          Agreeability: PlayerAgreeability
+          Aggressiveness: PlayerAggressiveness
+          Honesty: PlayerHonesty
+
+          LeagueGoals: integer         # unavailable if a match is running
+          CupGoals: integer            # unavailable if a match is running
+          FriendliesGoals: integer     # unavailable if a match is running
+          CareerGoals: integer         # unavailable if a match is running
+          CareerHattricks: integer     # unavailable if a match is running
+          MatchesCurrentTeam: integer  # unavailable if a match is running
+          GoalsCurrentTeam: integer    # unavailable if a match is running
+          AssistsCurrentTeam: integer
+          CareerAssists: integer
+
+          Specialty: SpecialtyID
+          Specialty__available_in: [1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4]
+
+          TransferListed: integer      # old versions
+          TransferListed_boolean: boolean
+
+          NationalTeamID: integer
+          CountryID: integer
+          Caps: integer
+          CapsU20: integer
+          Cards: integer
+          InjuryLevel: integer         # -1 healthy, 0 bruised, >0 injured weeks
+
+          StaminaSkill: SkillLevel
+          KeeperSkill: SkillLevel
+          PlaymakerSkill: SkillLevel
+          ScorerSkill: SkillLevel
+          PassingSkill: SkillLevel
+          WingerSkill: SkillLevel
+          DefenderSkill: SkillLevel
+          SetPiecesSkill: SkillLevel
+
+          PlayerCategoryId: PlayerCategoryID
+
+          TrainerData:                 # only if player has trainer license
+            TrainerType: integer       # 0 defensive, 1 offensive, 2 balanced
+            TrainerType__available_in: [1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5]
+            TrainerSkill: SkillLevel
+            TrainerSkillLevel: integer # 1..5
+
+          LastMatch:                   # only if includeMatchInfo=true
+            Date: datetime
+            MatchId: integer           # 0 = no match yet or bot team
+            PositionCode: MatchRoleID
+            PlayedMinutes: integer
+            Rating: float
+            RatingEndOfGame: float     # available from version 2.0
+
+          BestMatch:                   # always empty, disabled in all versions
+            empty: true

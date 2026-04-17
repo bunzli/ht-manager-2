@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model PlayerDetails {
+  id        Int      @id @default(autoincrement())
+  playerId  Int
+  fetchedAt DateTime @default(now())
+
+  firstName    String
+  nickName     String  @default("")
+  lastName     String
+  playerNumber Int     @default(0)
+  age          Int
+  ageDays      Int
+  genderId     Int     @default(1)
+  arrivalDate  String  @default("")
+  tsi          Int
+  playerForm   Int
+  experience   Int
+  loyalty      Int
+  motherClubBonus Boolean @default(false)
+  leadership   Int
+  salary       Int     @default(0)
+  isAbroad     Boolean @default(false)
+
+  agreeability   Int @default(0)
+  aggressiveness Int @default(0)
+  honesty        Int @default(0)
+
+  specialty    Int @default(0)
+  countryId    Int @default(0)
+  nationalTeamId Int @default(0)
+  caps         Int @default(0)
+  capsU20      Int @default(0)
+  cards        Int @default(0)
+  injuryLevel  Int @default(-1)
+
+  staminaSkill   Int @default(0)
+  keeperSkill    Int @default(0)
+  playmakerSkill Int @default(0)
+  scorerSkill    Int @default(0)
+  passingSkill   Int @default(0)
+  wingerSkill    Int @default(0)
+  defenderSkill  Int @default(0)
+  setPiecesSkill Int @default(0)
+
+  leagueGoals       Int @default(0)
+  cupGoals          Int @default(0)
+  friendliesGoals   Int @default(0)
+  careerGoals       Int @default(0)
+  careerHattricks   Int @default(0)
+  matchesCurrentTeam Int @default(0)
+  goalsCurrentTeam  Int @default(0)
+  assistsCurrentTeam Int @default(0)
+  careerAssists     Int @default(0)
+
+  playerCategoryId Int @default(0)
+  transferListed   Boolean @default(false)
+
+  avatarBackground String @default("")
+  avatarLayers     String @default("[]")
+
+  tracking        PlayerTracking?  @relation("LatestDetails")
+  transferPlayers TransferPlayer[]
+
+  @@index([playerId, fetchedAt])
+  @@map("player_details")
+}
+
+model PlayerTracking {
+  id            Int      @id @default(autoincrement())
+  playerId      Int      @unique
+  lastUpdatedAt DateTime @default(now())
+  isTracking    Boolean  @default(true)
+  positionOverride String?
+
+  latestDetailsId Int?          @unique
+  latestDetails   PlayerDetails? @relation("LatestDetails", fields: [latestDetailsId], references: [id])
+
+  @@map("player_tracking")
+}
+
+model PlayerChange {
+  id         Int      @id @default(autoincrement())
+  playerId   Int
+  detectedAt DateTime @default(now())
+  key        String
+  oldValue   String
+  newValue   String
+
+  @@index([playerId, detectedAt])
+  @@map("player_change")
+}
+
+model MarketStudy {
+  id           Int      @id @default(autoincrement())
+  name         String
+  searchParams String
+  status       String   @default("active")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  transferPlayers TransferPlayer[]
+
+  @@map("market_study")
+}
+
+model TransferPlayer {
+  id             Int      @id @default(autoincrement())
+  playerId       Int
+  marketStudyId  Int?
+
+  playerDetailsId Int
+  playerDetails   PlayerDetails @relation(fields: [playerDetailsId], references: [id])
+  marketStudy     MarketStudy?  @relation(fields: [marketStudyId], references: [id])
+
+  status         String   @default("listed")
+  askingPrice    Int      @default(0)
+  highestBid     Int      @default(0)
+  finalPrice     Int?
+  deadline       String   @default("")
+
+  buyerTeamId    Int?
+  buyerTeamName  String?
+  sellerTeamId   Int?
+  sellerTeamName String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([playerId])
+  @@index([marketStudyId])
+  @@map("transfer_player")
+}

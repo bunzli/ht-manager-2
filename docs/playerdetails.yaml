@@ -1,0 +1,140 @@
+endpoint:
+  file: playerdetails
+
+request:
+  version: 3.2                     # default: 3.2
+  actionType: view                 # options: view | placeBid
+
+  playerID: integer                # required
+
+  includeMatchInfo: false          # optional (default: false)
+
+  # required if actionType = placeBid
+  teamId: integer
+
+  # optional (used for bidding)
+  bidAmount: money                 # required in version 2.5
+  maxBidAmount: money              # autobid
+
+response:
+  HattrickData:
+    UserSupporterTier: supporterTier   # may be empty
+
+    Player:
+      PlayerID: integer
+      FirstName: string
+      NickName: string
+      LastName: string
+      PlayerNumber: integer
+
+      PlayerCategoryID: integer        # only visible to owner
+      OwnerNotes: string               # HTML encoded, only visible to owner
+
+      Age: integer
+      AgeDays: integer
+      NextBirthDay: datetime
+      GenderID: GenderID
+      ArrivalDate: datetime
+
+      PlayerForm: SkillLevel
+      Cards: integer                  # unavailable if match running
+      InjuryLevel: integer            # -1 healthy, 0 bruised, >0 injured
+
+      Statement: string               # HTML encoded
+      PlayerLanguage: string          # supporter only
+      PlayerLanguageID: integer       # supporter only
+
+      TrainerData:                    # only if player is trainer
+        TrainerType: integer          # 0 defensive, 1 offensive, 2 balanced
+        TrainerSkillLevel: integer    # 1..5
+
+      Agreeability: PlayerAgreeability
+      Aggressiveness: PlayerAggressiveness
+      Honesty: PlayerHonesty
+      Experience: SkillLevel
+      Loyalty: SkillLevel
+      MotherClubBonus: boolean
+
+      MotherClub:
+        TeamID: integer
+        TeamName: string
+
+      Leadership: SkillLevel
+      Specialty: SpecialtyID
+
+      NativeCountryID: integer
+      NativeLeagueID: integer
+      NativeLeagueName: string
+
+      TSI: integer
+
+      OwningTeam:
+        TeamID: integer
+        TeamName: string
+        LeagueID: integer
+        Salary: money                 # empty if no owner
+        IsAbroad: boolean             # may be empty
+
+      PlayerSkills:                   # only fully visible to owner (except stamina)
+        StaminaSkill: SkillLevel
+        KeeperSkill: SkillLevel
+        PlaymakerSkill: SkillLevel
+        ScorerSkill: SkillLevel
+        PassingSkill: SkillLevel
+        WingerSkill: SkillLevel
+        DefenderSkill: SkillLevel
+        SetPiecesSkill: SkillLevel
+
+      Caps: integer
+      CapsU20: integer
+
+      CareerGoals: integer            # unavailable if match running
+      CareerHattricks: integer        # unavailable if match running
+      LeagueGoals: integer            # unavailable if match running
+      CupGoals:
+        value: integer
+        available: boolean            # false if match running
+      FriendliesGoals: integer        # unavailable if match running
+
+      MatchesCurrentTeam: integer     # unavailable if match running
+      GoalsCurrentTeam: integer       # unavailable if match running
+      AssistsCurrentTeam: integer
+      CareerAssists: integer
+
+      NationalTeamID: integer
+      NationalTeamName: string
+
+      TransferListed: boolean
+
+      TransferDetails:                # empty if not transfer listed
+        AskingPrice: money
+        Deadline: datetime
+        HighestBid: money             # 0 if no bids
+        MaxBid: money                 # optional
+
+        BidderTeam:                   # empty if no bids
+          TeamID: integer
+          TeamName: string
+
+      LastMatch:                      # only if includeMatchInfo=true
+        Date: datetime
+        MatchId: integer              # 0 = no match yet or bot team
+        PositionCode: MatchRoleID
+        PlayedMinutes: integer
+        Rating: float
+        RatingEndOfGame: float
+
+constraints:
+  - playerID is required
+  - actionType=placeBid requires teamId
+  - version 2.5 requires bidAmount when placing bid
+  - placeBid requires:
+      - supporter account
+      - scope: place_bid
+
+notes:
+  - some stats unavailable during live match
+  - PlayerSkills only fully visible to owner
+  - TransferDetails empty if player not listed
+  - BidderTeam empty if no bids
+  - IsAbroad may be empty if player has no owner

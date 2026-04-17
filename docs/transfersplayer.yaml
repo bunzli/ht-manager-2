@@ -1,0 +1,40 @@
+endpoint:
+  file: transfersplayer
+
+request:
+  version: 1.1           # default: 1.1
+  playerID: integer      # required
+
+response:
+  HattrickData:
+    Transfers:
+      StartDate: datetime
+      EndDate: datetime
+
+      Player:
+        PlayerID: integer
+        PlayerName: string
+
+      Transfer:
+        - TransferID: integer
+          Deadline: datetime
+
+          Buyer:
+            BuyerTeamID: integer
+            BuyerTeamName: string
+
+          Seller:
+            SellerTeamID: integer
+            SellerTeamName: string
+
+          Price: money
+          TSI: integer    # player's TSI when listed for transfer
+
+constraints:
+  - playerID is required
+
+notes:
+  - returns all transfers for the specified player
+  - Transfer can appear multiple times
+  - StartDate = oldest date in returned transfer list
+  - EndDate = latest date in returned transfer list

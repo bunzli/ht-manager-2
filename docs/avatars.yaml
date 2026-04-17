@@ -1,0 +1,36 @@
+endpoint:
+  file: avatars
+
+request:
+  version: 1.1              # default: 1.1
+  actionType: players       # options: players | hof
+  teamId: integer           # default: logged user's senior teamId
+
+response:
+  HattrickData:
+    Team:
+      TeamId: integer
+
+    Players:
+      - Player:
+          PlayerID: integer
+
+          Avatar:
+            BackgroundImage: URI    # silhouette for non-supporter teams
+
+            Layer:                  # not provided for non-supporter teams
+              - x: integer
+                y: integer
+                Image: URI
+
+constraints:
+  - file is required
+  - actionType=players returns avatars for current team players
+  - actionType=hof returns avatars for Hall of Fame players
+  - teamId defaults to logged user's senior teamId
+
+notes:
+  - BackgroundImage is always the card background image URL
+  - Layer contains avatar body parts with x/y coordinates
+  - non-supporter teams do not receive Layer data
+  - non-supporter teams may receive a silhouette background image

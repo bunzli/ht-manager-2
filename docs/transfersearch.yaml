@@ -1,0 +1,110 @@
+endpoint:
+  file: transfersearch
+
+# SkillID, SkillLevel, SpecialtyID definitions: docs/types.yaml (enums SkillID, SkillLevel, SpecialtyID)
+# SkillID values: 1 Goaltending, 2 Stamina, 3 Set pieces, 4 Defending, 5 Scoring, 6 Winger,
+#   7 Passing, 8 Playmaking, 9 Trainer, 10 Leadership, 11 Experience
+
+request:
+  version: 1.1                   # default: 1.1
+
+  ageMin: integer                # required (years)
+  ageDaysMin: integer            # default: 0
+
+  ageMax: integer                # required (years)
+  ageDaysMax: integer            # default: 111
+
+  skillType1: SkillID            # required
+  minSkillValue1: SkillLevel     # required
+  maxSkillValue1: SkillLevel     # required (max diff: 4 levels)
+
+  skillType2: SkillID
+  minSkillValue2: SkillLevel
+  maxSkillValue2: SkillLevel
+
+  skillType3: SkillID
+  minSkillValue3: SkillLevel
+  maxSkillValue3: SkillLevel
+
+  skillType4: SkillID
+  minSkillValue4: SkillLevel
+  maxSkillValue4: SkillLevel
+
+  specialty: SpecialtyID
+  nativeCountryId: integer
+
+  tsiMin: integer
+  tsiMax: integer
+
+  priceMin: money
+  priceMax: money
+
+  pageSize: integer              # default: 25, max: 100
+  pageIndex: integer             # default: 0
+
+response:
+  HattrickData:
+    TransferSearch:
+      ItemCount: integer         # -1 if >100 results
+      PageSize: integer
+      PageIndex: integer
+
+    TransferResults:
+      - TransferResult:
+          PlayerId: integer
+          FirstName: string
+          NickName: string
+          LastName: string
+
+          NativeCountryID: integer
+
+          AskingPrice: money
+          Deadline: datetime
+          HighestBid: money       # 0 if no bids
+
+          BidderTeam:             # empty if no bids
+            TeamID: integer
+            TeamName: string
+
+          Details:                # empty if deadline passed
+            Age: integer
+            AgeDays: integer
+            Salary: money
+            TSI: integer
+            PlayerForm: SkillLevel
+            Experience: SkillLevel
+            Leadership: SkillLevel
+            Specialty: SpecialtyID
+
+            Cards: integer        # unavailable if match running
+            InjuryLevel: integer  # -1 healthy, 0 bruised, >0 injured
+
+            StaminaSkill: SkillLevel
+            KeeperSkill: SkillLevel
+            PlaymakerSkill: SkillLevel
+            ScorerSkill: SkillLevel
+            PassingSkill: SkillLevel
+            WingerSkill: SkillLevel
+            DefenderSkill: SkillLevel
+            SetPiecesSkill: SkillLevel
+
+          SellerTeam:
+            TeamID: integer
+            TeamName: string
+            LeagueId: integer
+
+constraints:
+  - skillType1 + minSkillValue1 + maxSkillValue1 are required
+  - difference between minSkillValueX and maxSkillValueX <= 4
+  - for skills:
+      - set pieces, leadership, experience: min >= 5
+      - keeper: min >= 3
+  - pageSize max = 100
+
+notes:
+  - ItemCount = -1 means "many" (>100 results)
+  - Details empty if transfer deadline has passed
+  - BidderTeam empty if no bids
+  - HighestBid = 0 if no bids
+  - some stats unavailable during live match
+  - not intended for automated scraping (manual use)

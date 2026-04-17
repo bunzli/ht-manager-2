@@ -1,0 +1,34 @@
+input:
+  file: "currentbids"                # required
+
+  version: 1.0                      # optional (default: 1.0)
+
+  actionType:                       # optional (default: view)
+    - view                          # get transfers
+    - ignoreTransfer                # ignore specific transfer (requires place_bid scope)
+    - deleteAllFinished             # remove all finished (requires place_bid scope)
+
+  teamId: integer                   # optional (default: user's main team)
+
+  # required only if actionType=ignoreTransfer
+  transferId: integer
+  trackingTypeId: integer           # allowed: 5, 8, 9
+
+output:
+  HattrickData:
+    TeamId: integer
+
+    BidItems:                       # grouped by TrackingTypeId
+      - TrackingTypeId: integer
+
+        BidItem:
+          - TransferId: integer
+            PlayerId: integer
+            PlayerName: string
+
+            HighestBid:             # may be empty if no bids
+              Amount: money
+              TeamId: integer
+              TeamName: string
+
+            Deadline: datetime
