@@ -1,6 +1,6 @@
 services:
   ht-manager:
-    image: ghcr.io/bunzli/ht-manager:latest
+    image: ghcr.io/bunzli/ht-manager-2:latest
     container_name: ht-manager
     ports:
       - "3001:3001"
