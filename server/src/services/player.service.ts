@@ -90,6 +90,12 @@ export function withPositionScores(details: Record<string, unknown>) {
       wingerSkill: details["wingerSkill"] as number,
       passingSkill: details["passingSkill"] as number,
       scorerSkill: details["scorerSkill"] as number,
+      staminaSkill: details["staminaSkill"] as number,
+      playerForm: details["playerForm"] as number,
+      experience: details["experience"] as number,
+      loyalty: details["loyalty"] as number,
+      motherClubBonus: details["motherClubBonus"] as boolean,
+      specialty: details["specialty"] as number,
     }),
   };
 }

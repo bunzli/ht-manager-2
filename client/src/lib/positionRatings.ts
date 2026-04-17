@@ -1,6 +1,10 @@
 // Display metadata for each HT position.
 // Scoring is computed server-side and returned via the API as `positionScores`.
 // Source: https://wiki.hattrick.org/wiki/Contribution
+//
+// Weights below are the raw wiki skill-contribution coefficients (normal orders).
+// The server normalises by Σw and applies form / stamina / XP / loyalty / specialty
+// modifiers, so the displayed score is a weighted-average effective skill.
 
 export type PositionSkillKey =
   | "keeperSkill"
@@ -24,8 +28,8 @@ export const POSITION_RATINGS: PositionRating[] = [
     label: "Goalkeeper",
     shortLabel: "GK",
     weights: {
-      keeperSkill: 0.165 + 0.183,
-      defenderSkill: 0.079 + 0.082,
+      keeperSkill: 0.74,
+      defenderSkill: 0.30,
     },
   },
   {
@@ -33,8 +37,8 @@ export const POSITION_RATINGS: PositionRating[] = [
     label: "Central Defender",
     shortLabel: "CD",
     weights: {
-      defenderSkill: 0.186 + 0.077,
-      playmakerSkill: 0.035,
+      defenderSkill: 1.0,
+      playmakerSkill: 0.25,
     },
   },
   {
@@ -42,9 +46,9 @@ export const POSITION_RATINGS: PositionRating[] = [
     label: "Wing Back",
     shortLabel: "WB",
     weights: {
-      defenderSkill: 0.083 + 0.268,
-      playmakerSkill: 0.023,
-      wingerSkill: 0.129,
+      defenderSkill: 1.3,
+      playmakerSkill: 0.1,
+      wingerSkill: 0.45,
     },
   },
   {
@@ -52,10 +56,10 @@ export const POSITION_RATINGS: PositionRating[] = [
     label: "Inner Midfielder",
     shortLabel: "IM",
     weights: {
-      defenderSkill: 0.070 + 0.028,
-      playmakerSkill: 0.139,
-      passingSkill: 0.028 + 0.057,
-      scorerSkill: 0.038,
+      playmakerSkill: 1.0,
+      defenderSkill: 0.4,
+      passingSkill: 0.33,
+      scorerSkill: 0.22,
     },
   },
   {
@@ -63,11 +67,10 @@ export const POSITION_RATINGS: PositionRating[] = [
     label: "Winger",
     shortLabel: "W",
     weights: {
-      defenderSkill: 0.037 + 0.104,
-      playmakerSkill: 0.065,
-      wingerSkill: 0.219,
-      passingSkill: 0.054,
-      scorerSkill: 0.018,
+      defenderSkill: 0.55,
+      playmakerSkill: 0.45,
+      wingerSkill: 0.86,
+      passingSkill: 0.37,
     },
   },
   {
@@ -75,11 +78,9 @@ export const POSITION_RATINGS: PositionRating[] = [
     label: "Forward",
     shortLabel: "FW",
     weights: {
-      defenderSkill: 0.041 + 0.058,
-      playmakerSkill: 0.048,
-      wingerSkill: 0.032,
-      passingSkill: 0.178,
-      scorerSkill: 0.066,
+      scorerSkill: 1.0,
+      passingSkill: 0.369,
+      playmakerSkill: 0.25,
     },
   },
 ];

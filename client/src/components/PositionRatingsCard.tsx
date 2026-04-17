@@ -40,8 +40,8 @@ export function PositionRatingsCard({
             Position Ratings
           </h3>
           <p className="text-xs text-gray-400 mt-0.5">
-            Weighted average of relevant skills per position (0–20 scale, normal
-            orders)
+            Weighted effective skill per position, adjusted for form, stamina,
+            experience &amp; specialty (normal orders)
           </p>
         </div>
 
@@ -89,7 +89,7 @@ export function PositionRatingsCard({
           const highlight = isEffective && (isOverridden || isAutoHighlight);
 
           const rounded = Math.round(score * 10) / 10;
-          const barWidth = `${(score / 20) * 100}%`;
+          const barWidth = `${Math.min(100, (score / 20) * 100)}%`;
           const barColor = skillColor(Math.round(score));
           const entries = Object.entries(pos.weights) as [
             PositionSkillKey,
