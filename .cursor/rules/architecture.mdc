@@ -27,9 +27,9 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 | File | Responsibility |
 |---|---|
 | `services/player.service.ts` | Player CRUD, CHPP refresh, position-score computation, position-override persistence. |
-| `services/marketStudy.service.ts` | Market study lifecycle: create, list, detail, search, bulk-update, resolve transfers. |
+| `services/marketStudy.service.ts` | Market study lifecycle: create, list, detail, search, bulk-update, resolve transfers. Also manages custom chart configs (create/delete). |
 | `services/transferResolver.ts` | Matches pending transfer listings to completed transfers and resolves final prices/deadlines. |
-| `services/soldPriceAggregator.ts` | Aggregates sold-player prices into chart-ready series (by age, by specialty). |
+| `services/soldPriceAggregator.ts` | Aggregates sold-player prices into chart-ready series (by age, by specialty). Custom charts use client-side aggregation instead. |
 
 ### CHPP integration
 
@@ -88,6 +88,8 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 | `components/market-study/StudyMetrics.tsx` | Computed metrics cards (avg price, counts, etc.) for a study. |
 | `components/market-study/StudyFilters.tsx` | Filter bar UI: status, age range, specialty dropdowns. |
 | `components/market-study/StudyCharts.tsx` | Recharts visualisations: price-by-age and price-by-specialty. |
+| `components/market-study/CustomChartBuilder.tsx` | Form for adding a user-defined custom chart (group-by dimension + optional filters). |
+| `components/market-study/CustomChart.tsx` | Renders a single custom bar chart; aggregates sold-player data client-side via `chartAggregator`. |
 | `components/market-study/StudyResultsTable.tsx` | Sortable, filterable table of study transfer results with row selection. |
 
 ### Components — shared / domain
@@ -122,6 +124,7 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 | `lib/playerUtils.ts` | `displayName` and `hattrickPlayerUrl` — reusable player display helpers. |
 | `lib/positionRatings.ts` | Position display metadata and weight definitions (client-side mirror of server ratings). |
 | `lib/format.ts` | `formatNumber` and `formatMoney` — locale-aware number formatting. |
+| `lib/chartAggregator.ts` | Client-side aggregation for custom charts: filters sold players, groups by a chosen dimension, computes avg price per bucket. |
 
 ### Storybook & test data
 

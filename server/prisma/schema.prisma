@@ -107,8 +107,22 @@ model MarketStudy {
   updatedAt    DateTime @updatedAt
 
   transferPlayers TransferPlayer[]
+  customCharts    CustomChart[]
 
   @@map("market_study")
+}
+
+model CustomChart {
+  id            Int         @id @default(autoincrement())
+  marketStudyId Int
+  marketStudy   MarketStudy @relation(fields: [marketStudyId], references: [id], onDelete: Cascade)
+  groupBy       String
+  filters       String      @default("[]")
+
+  createdAt DateTime @default(now())
+
+  @@index([marketStudyId])
+  @@map("custom_chart")
 }
 
 model TransferPlayer {

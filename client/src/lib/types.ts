@@ -203,9 +203,29 @@ export interface PriceBySpecialty extends PriceBucket {
   specialty: number;
 }
 
+export interface ChartFilter {
+  field: string;
+  value: number;
+}
+
+export interface CustomChartConfig {
+  id: number;
+  marketStudyId: number;
+  groupBy: string;
+  filters: ChartFilter[];
+}
+
+export interface ChartBucket {
+  key: number;
+  label: string;
+  avgPrice: number;
+  count: number;
+}
+
 export interface MarketStudyDetail {
   study: MarketStudy;
   players: TransferPlayerRow[];
   priceByAge: PriceByAge[];
   priceBySpecialty: PriceBySpecialty[];
+  customCharts: CustomChartConfig[];
 }

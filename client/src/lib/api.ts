@@ -7,6 +7,8 @@ import {
   MarketStudy,
   MarketStudyListItem,
   MarketStudyDetail,
+  CustomChartConfig,
+  ChartFilter,
 } from "./types";
 
 const BASE = "/api";
@@ -115,4 +117,30 @@ export async function deleteTransferPlayers(
     throw new Error(`API ${res.status}: ${text.slice(0, 300)}`);
   }
   return res.json() as Promise<{ deleted: number }>;
+}
+
+export function addCustomChart(
+  studyId: number,
+  groupBy: string,
+  filters: ChartFilter[],
+): Promise<CustomChartConfig> {
+  return postJson<CustomChartConfig>(
+    `/market-studies/${studyId}/charts`,
+    { groupBy, filters },
+  );
+}
+
+export async function deleteCustomChart(
+  studyId: number,
+  chartId: number,
+): Promise<{ deleted: boolean }> {
+  const res = await fetch(
+    `${BASE}/market-studies/${studyId}/charts/${chartId}`,
+    { method: "DELETE" },
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API ${res.status}: ${text.slice(0, 300)}`);
+  }
+  return res.json() as Promise<{ deleted: boolean }>;
 }

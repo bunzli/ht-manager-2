@@ -1,5 +1,10 @@
-import { useMemo } from "react";
-import { useMarketStudyData, useStudyFilters } from "../hooks/useMarketStudy";
+import { useCallback, useMemo, useRef } from "react";
+import {
+  useMarketStudyData,
+  useStudyFilters,
+  INITIAL_FILTERS,
+} from "../hooks/useMarketStudy";
+import type { StudyFilters as StudyFiltersState } from "../hooks/useMarketStudy";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { ErrorAlert } from "../components/ui/ErrorAlert";
 import { ActionMessage } from "../components/ui/ActionMessage";
@@ -7,10 +12,12 @@ import { BackLink } from "../components/ui/BackLink";
 import { StudyMetrics, computeMetrics } from "../components/market-study/StudyMetrics";
 import { StudyFilters } from "../components/market-study/StudyFilters";
 import { StudyCharts } from "../components/market-study/StudyCharts";
+import { CustomChartBuilder } from "../components/market-study/CustomChartBuilder";
+import { CustomChart } from "../components/market-study/CustomChart";
 import { StudyResultsTable, applyFilters } from "../components/market-study/StudyResultsTable";
 import { specialtyLabel } from "../lib/skills";
-import { SKILL_TYPE_LABELS } from "../lib/skillTypes";
-import type { TransferSearchParams } from "../lib/types";
+import { SKILL_TYPE_MAP, SKILL_TYPE_LABELS } from "../lib/skillTypes";
+import type { TransferSearchParams, CustomChartConfig } from "../lib/types";
 
 interface Props {
   studyId: number;
@@ -42,12 +49,45 @@ function formatSearchParams(raw: string): string {
   }
 }
 
+const FIELD_TO_SKILL_TYPE: Record<string, string> = Object.fromEntries(
+  SKILL_TYPE_MAP.map((s) => [s.field, String(s.id)]),
+);
+
+function buildFiltersFromBar(
+  config: CustomChartConfig,
+  bucketKey: number,
+): StudyFiltersState {
+  const f: StudyFiltersState = { ...INITIAL_FILTERS, statusFilter: "sold" };
+
+  const applyDimension = (field: string, value: number) => {
+    if (field === "age") {
+      f.ageMin = String(value);
+      f.ageMax = String(value);
+    } else if (FIELD_TO_SKILL_TYPE[field] && !f.skillFilter) {
+      f.skillFilter = FIELD_TO_SKILL_TYPE[field];
+      f.skillMinLevel = String(value);
+    }
+  };
+
+  applyDimension(config.groupBy, bucketKey);
+
+  for (const cf of config.filters) {
+    applyDimension(cf.field, cf.value);
+  }
+
+  return f;
+}
+
 export function MarketStudyDetailPage({ studyId, onBack }: Props) {
+  const tableRef = useRef<HTMLDivElement>(null);
   const {
     study,
     players,
     priceByAge,
     priceBySpecialty,
+    customCharts,
+    addingChart,
+    removingChartId,
     loading,
     updating,
     updatingSelected,
@@ -61,10 +101,22 @@ export function MarketStudyDetailPage({ studyId, onBack }: Props) {
     handleUpdateSelected,
     handleDeleteSelected,
     clearSelection,
+    handleAddChart,
+    handleRemoveChart,
   } = useMarketStudyData(studyId);
 
-  const { filters, updateFilter, clearFilters, hasActiveFilters } =
+  const { filters, setFilters, updateFilter, clearFilters, hasActiveFilters } =
     useStudyFilters();
+
+  const handleBarClick = useCallback(
+    (config: CustomChartConfig, bucketKey: number) => {
+      setFilters(buildFiltersFromBar(config, bucketKey));
+      setTimeout(() => {
+        tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 0);
+    },
+    [setFilters],
+  );
 
   const filtered = useMemo(
     () => applyFilters(players, filters),
@@ -160,13 +212,33 @@ export function MarketStudyDetailPage({ studyId, onBack }: Props) {
 
       <StudyCharts priceByAge={priceByAge} priceBySpecialty={priceBySpecialty} />
 
-      <StudyResultsTable
-        players={players}
-        filters={filters}
-        selectedIds={selectedIds}
-        onToggleRow={toggleRow}
-        onToggleAll={toggleAll}
-      />
+      <CustomChartBuilder onAdd={handleAddChart} adding={addingChart} />
+
+      {customCharts.length > 0 && (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          {customCharts.map((chart, i) => (
+            <CustomChart
+              key={chart.id}
+              config={chart}
+              players={players}
+              colorIndex={i}
+              onRemove={handleRemoveChart}
+              onBarClick={handleBarClick}
+              removing={removingChartId === chart.id}
+            />
+          ))}
+        </div>
+      )}
+
+      <div ref={tableRef}>
+        <StudyResultsTable
+          players={players}
+          filters={filters}
+          selectedIds={selectedIds}
+          onToggleRow={toggleRow}
+          onToggleAll={toggleAll}
+        />
+      </div>
     </div>
   );
 }

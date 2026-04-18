@@ -12,6 +12,8 @@ import {
   updateStudyPlayers,
   bulkResolve,
   bulkDelete,
+  createCustomChart,
+  deleteCustomChart,
 } from "../services/marketStudy.service";
 
 export function createMarketStudiesRouter(
@@ -169,6 +171,65 @@ export function createMarketStudiesRouter(
         res.json(result);
       } catch (err) {
         errorResponse(res, "Failed to delete transfer players", err);
+      }
+    }),
+  );
+
+  router.post(
+    "/:id/charts",
+    asyncHandler(async (req: Request, res: Response) => {
+      const studyId = parseIntParam(req, res, "id");
+      if (studyId === null) return;
+
+      const { groupBy, filters } = req.body as {
+        groupBy: string;
+        filters: { field: string; value: number }[];
+      };
+
+      if (!groupBy) {
+        res.status(400).json({ error: "groupBy is required" });
+        return;
+      }
+
+      try {
+        const result = await createCustomChart(
+          prisma,
+          studyId,
+          groupBy,
+          Array.isArray(filters) ? filters : [],
+        );
+        if (!result) {
+          res.status(404).json({ error: "Market study not found" });
+          return;
+        }
+        res.status(201).json(result);
+      } catch (err) {
+        errorResponse(res, "Failed to create custom chart", err);
+      }
+    }),
+  );
+
+  router.delete(
+    "/:id/charts/:chartId",
+    asyncHandler(async (req: Request, res: Response) => {
+      const studyId = parseIntParam(req, res, "id");
+      if (studyId === null) return;
+
+      const chartId = parseInt(req.params.chartId as string, 10);
+      if (isNaN(chartId)) {
+        res.status(400).json({ error: "Invalid chartId" });
+        return;
+      }
+
+      try {
+        const result = await deleteCustomChart(prisma, studyId, chartId);
+        if (!result) {
+          res.status(404).json({ error: "Custom chart not found" });
+          return;
+        }
+        res.json(result);
+      } catch (err) {
+        errorResponse(res, "Failed to delete custom chart", err);
       }
     }),
   );

@@ -4,12 +4,16 @@ import {
   updateStudy,
   updateTransferPlayers,
   deleteTransferPlayers,
+  addCustomChart,
+  deleteCustomChart,
 } from "../lib/api";
 import type {
   MarketStudy,
   TransferPlayerRow,
   PriceByAge,
   PriceBySpecialty,
+  CustomChartConfig,
+  ChartFilter,
 } from "../lib/types";
 
 export function useMarketStudyData(studyId: number) {
@@ -19,6 +23,9 @@ export function useMarketStudyData(studyId: number) {
   const [priceBySpecialty, setPriceBySpecialty] = useState<PriceBySpecialty[]>(
     [],
   );
+  const [customCharts, setCustomCharts] = useState<CustomChartConfig[]>([]);
+  const [addingChart, setAddingChart] = useState(false);
+  const [removingChartId, setRemovingChartId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [updatingSelected, setUpdatingSelected] = useState(false);
@@ -36,6 +43,7 @@ export function useMarketStudyData(studyId: number) {
         setPlayers(data.players);
         setPriceByAge(data.priceByAge);
         setPriceBySpecialty(data.priceBySpecialty);
+        setCustomCharts(data.customCharts ?? []);
       })
       .catch((err) =>
         setError(err instanceof Error ? err.message : "Unknown error"),
@@ -53,6 +61,7 @@ export function useMarketStudyData(studyId: number) {
       setPlayers(data.players);
       setPriceByAge(data.priceByAge);
       setPriceBySpecialty(data.priceBySpecialty);
+      setCustomCharts(data.customCharts ?? []);
       const meta = (data as unknown as Record<string, unknown>)
         ._updateResult as {
         newPlayersAdded: number;
@@ -166,11 +175,48 @@ export function useMarketStudyData(studyId: number) {
 
   const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
 
+  const handleAddChart = useCallback(
+    async (groupBy: string, filters: ChartFilter[]) => {
+      setAddingChart(true);
+      setError(null);
+      try {
+        const chart = await addCustomChart(studyId, groupBy, filters);
+        setCustomCharts((prev) => [...prev, chart]);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to add chart");
+      } finally {
+        setAddingChart(false);
+      }
+    },
+    [studyId],
+  );
+
+  const handleRemoveChart = useCallback(
+    async (chartId: number) => {
+      setRemovingChartId(chartId);
+      setError(null);
+      try {
+        await deleteCustomChart(studyId, chartId);
+        setCustomCharts((prev) => prev.filter((c) => c.id !== chartId));
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to remove chart",
+        );
+      } finally {
+        setRemovingChartId(null);
+      }
+    },
+    [studyId],
+  );
+
   return {
     study,
     players,
     priceByAge,
     priceBySpecialty,
+    customCharts,
+    addingChart,
+    removingChartId,
     loading,
     updating,
     updatingSelected,
@@ -184,6 +230,8 @@ export function useMarketStudyData(studyId: number) {
     handleUpdateSelected,
     handleDeleteSelected,
     clearSelection,
+    handleAddChart,
+    handleRemoveChart,
   };
 }
 
@@ -232,5 +280,5 @@ export function useStudyFilters() {
     [filters],
   );
 
-  return { filters, updateFilter, clearFilters, hasActiveFilters };
+  return { filters, setFilters, updateFilter, clearFilters, hasActiveFilters };
 }

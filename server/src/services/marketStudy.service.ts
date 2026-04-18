@@ -183,6 +183,7 @@ function getStudyWithPlayers(prisma: PrismaClient, id: number) {
         include: { playerDetails: true },
         orderBy: { createdAt: "desc" },
       },
+      customCharts: { orderBy: { createdAt: "asc" } },
     },
   });
 }
@@ -196,6 +197,13 @@ function buildStudyResponse(
 
   const { priceByAge, priceBySpecialty } = aggregateSoldPrices(soldPlayers);
 
+  const customCharts = (study.customCharts ?? []).map((c) => ({
+    id: c.id,
+    marketStudyId: c.marketStudyId,
+    groupBy: c.groupBy,
+    filters: JSON.parse(c.filters) as { field: string; value: number }[],
+  }));
+
   return {
     study: {
       id: study.id,
@@ -208,6 +216,7 @@ function buildStudyResponse(
     players: study.transferPlayers,
     priceByAge,
     priceBySpecialty,
+    customCharts,
   };
 }
 
@@ -471,4 +480,45 @@ export async function bulkDelete(
   }
 
   return { deleted: validIds.length };
+}
+
+export async function createCustomChart(
+  prisma: PrismaClient,
+  studyId: number,
+  groupBy: string,
+  filters: { field: string; value: number }[],
+) {
+  const study = await prisma.marketStudy.findUnique({
+    where: { id: studyId },
+  });
+  if (!study) return null;
+
+  const chart = await prisma.customChart.create({
+    data: {
+      marketStudyId: studyId,
+      groupBy,
+      filters: JSON.stringify(filters),
+    },
+  });
+
+  return {
+    id: chart.id,
+    marketStudyId: chart.marketStudyId,
+    groupBy: chart.groupBy,
+    filters,
+  };
+}
+
+export async function deleteCustomChart(
+  prisma: PrismaClient,
+  studyId: number,
+  chartId: number,
+) {
+  const chart = await prisma.customChart.findFirst({
+    where: { id: chartId, marketStudyId: studyId },
+  });
+  if (!chart) return null;
+
+  await prisma.customChart.delete({ where: { id: chartId } });
+  return { deleted: true };
 }
