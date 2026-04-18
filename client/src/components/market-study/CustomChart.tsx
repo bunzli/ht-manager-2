@@ -8,6 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  type BarRectangleItem,
 } from "recharts";
 import { formatMoney } from "../../lib/format";
 import { aggregateCustomChart } from "../../lib/chartAggregator";
@@ -155,7 +156,8 @@ export function CustomChart({
             cursor={onBarClick ? "pointer" : undefined}
             onClick={
               onBarClick
-                ? (data: ChartBucket) => onBarClick(config, data.key)
+                ? (data: BarRectangleItem) =>
+                    onBarClick(config, (data.payload as ChartBucket).key)
                 : undefined
             }
           >
