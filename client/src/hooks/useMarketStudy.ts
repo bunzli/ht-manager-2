@@ -4,6 +4,7 @@ import {
   updateStudy,
   updateTransferPlayers,
   deleteTransferPlayers,
+  deleteUnsoldPlayers,
   addCustomChart,
   deleteCustomChart,
 } from "../lib/api";
@@ -30,6 +31,7 @@ export function useMarketStudyData(studyId: number) {
   const [updating, setUpdating] = useState(false);
   const [updatingSelected, setUpdatingSelected] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deletingUnsold, setDeletingUnsold] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -175,6 +177,35 @@ export function useMarketStudyData(studyId: number) {
 
   const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
 
+  const handleDeleteUnsold = useCallback(async () => {
+    const confirmed = window.confirm(
+      "Remove all non-sold players (not sold, ended, expired) from this study? This cannot be undone.",
+    );
+    if (!confirmed) return;
+
+    setDeletingUnsold(true);
+    setError(null);
+    setActionMsg(null);
+    try {
+      const result = await deleteUnsoldPlayers(studyId);
+      setPlayers((prev) =>
+        prev.filter((p) =>
+          ["listed", "sold"].includes(p.status),
+        ),
+      );
+      setSelectedIds(new Set());
+      setActionMsg(
+        result.deleted === 0
+          ? "No non-sold players to remove."
+          : `Removed ${result.deleted} non-sold player${result.deleted === 1 ? "" : "s"}.`,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete players");
+    } finally {
+      setDeletingUnsold(false);
+    }
+  }, [studyId]);
+
   const handleAddChart = useCallback(
     async (groupBy: string, filters: ChartFilter[]) => {
       setAddingChart(true);
@@ -230,6 +261,8 @@ export function useMarketStudyData(studyId: number) {
     handleUpdateSelected,
     handleDeleteSelected,
     clearSelection,
+    handleDeleteUnsold,
+    deletingUnsold,
     handleAddChart,
     handleRemoveChart,
   };

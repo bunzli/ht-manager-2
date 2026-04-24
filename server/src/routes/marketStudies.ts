@@ -12,6 +12,7 @@ import {
   updateStudyPlayers,
   bulkResolve,
   bulkDelete,
+  deleteUnsoldPlayers,
   createCustomChart,
   deleteCustomChart,
 } from "../services/marketStudy.service";
@@ -171,6 +172,25 @@ export function createMarketStudiesRouter(
         res.json(result);
       } catch (err) {
         errorResponse(res, "Failed to delete transfer players", err);
+      }
+    }),
+  );
+
+  router.delete(
+    "/:id/players/unsold",
+    asyncHandler(async (req: Request, res: Response) => {
+      const studyId = parseIntParam(req, res, "id");
+      if (studyId === null) return;
+
+      try {
+        const result = await deleteUnsoldPlayers(prisma, studyId);
+        if (!result) {
+          res.status(404).json({ error: "Market study not found" });
+          return;
+        }
+        res.json(result);
+      } catch (err) {
+        errorResponse(res, "Failed to delete unsold players", err);
       }
     }),
   );

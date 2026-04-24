@@ -103,6 +103,19 @@ export async function updateTransferPlayers(
   return postJson(`/market-studies/${studyId}/players/update`, { ids });
 }
 
+export async function deleteUnsoldPlayers(
+  studyId: number,
+): Promise<{ deleted: number }> {
+  const res = await fetch(`${BASE}/market-studies/${studyId}/players/unsold`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API ${res.status}: ${text.slice(0, 300)}`);
+  }
+  return res.json() as Promise<{ deleted: number }>;
+}
+
 export async function deleteTransferPlayers(
   studyId: number,
   ids: number[],

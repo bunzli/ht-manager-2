@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MarketStudyForm } from "../components/MarketStudyForm";
-import { fetchMarketStudies } from "../lib/api";
+import { ActionMessage } from "../components/ui/ActionMessage";
+import { fetchMarketStudies, updateStudy } from "../lib/api";
 import { formatMoney } from "../lib/format";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { ErrorAlert } from "../components/ui/ErrorAlert";
@@ -13,6 +14,10 @@ interface Props {
 export function MarketStudiesPage({ onStudyClick }: Props) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [updatingAll, setUpdatingAll] = useState(false);
+  const [updateAllProgress, setUpdateAllProgress] = useState<string | null>(null);
+  const [updateAllError, setUpdateAllError] = useState<string | null>(null);
+  const [updateAllDone, setUpdateAllDone] = useState<string | null>(null);
 
   const { data: studies = [], isLoading, error } = useQuery({
     queryKey: ["market-studies"],
@@ -24,6 +29,32 @@ export function MarketStudiesPage({ onStudyClick }: Props) {
     queryClient.invalidateQueries({ queryKey: ["market-studies"] });
   }
 
+  async function handleUpdateAll() {
+    if (studies.length === 0 || updatingAll) return;
+    setUpdatingAll(true);
+    setUpdateAllError(null);
+    setUpdateAllDone(null);
+    try {
+      for (let i = 0; i < studies.length; i++) {
+        const s = studies[i]!;
+        setUpdateAllProgress(`Updating ${i + 1}/${studies.length}: ${s.name}`);
+        await updateStudy(s.id);
+      }
+      setUpdateAllDone(
+        `Updated ${studies.length} study${studies.length === 1 ? "" : "ies"}.`,
+      );
+      await queryClient.invalidateQueries({ queryKey: ["market-studies"] });
+    } catch (err) {
+      setUpdateAllError(
+        err instanceof Error ? err.message : "Failed to update studies",
+      );
+      await queryClient.invalidateQueries({ queryKey: ["market-studies"] });
+    } finally {
+      setUpdatingAll(false);
+      setUpdateAllProgress(null);
+    }
+  }
+
   const errorMessage = error instanceof Error ? error.message : null;
 
   return (
@@ -31,12 +62,24 @@ export function MarketStudiesPage({ onStudyClick }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Market Studies</h2>
         {!showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors self-start sm:self-auto"
-          >
-            + New Study
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 self-start sm:self-auto w-full sm:w-auto">
+            {studies.length > 0 && (
+              <button
+                type="button"
+                onClick={handleUpdateAll}
+                disabled={isLoading || updatingAll}
+                className="px-4 py-2 border border-gray-300 bg-white text-gray-800 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {updatingAll ? "Updating…" : "Update All"}
+              </button>
+            )}
+            <button
+              onClick={() => setShowForm(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+            >
+              + New Study
+            </button>
+          </div>
         )}
       </div>
 
@@ -60,6 +103,24 @@ export function MarketStudiesPage({ onStudyClick }: Props) {
       {errorMessage && (
         <div className="mb-6">
           <ErrorAlert message={errorMessage} />
+        </div>
+      )}
+
+      {updateAllProgress && (
+        <div className="mb-4">
+          <ActionMessage message={updateAllProgress} />
+        </div>
+      )}
+
+      {updateAllError && (
+        <div className="mb-4">
+          <ActionMessage variant="error" message={updateAllError} />
+        </div>
+      )}
+
+      {updateAllDone && !updatingAll && !updateAllError && (
+        <div className="mb-4">
+          <ActionMessage message={updateAllDone} />
         </div>
       )}
 

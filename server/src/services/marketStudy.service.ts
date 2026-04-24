@@ -482,6 +482,48 @@ export async function bulkDelete(
   return { deleted: validIds.length };
 }
 
+export async function deleteUnsoldPlayers(
+  prisma: PrismaClient,
+  studyId: number,
+) {
+  const study = await prisma.marketStudy.findUnique({ where: { id: studyId } });
+  if (!study) return null;
+
+  const unsold = await prisma.transferPlayer.findMany({
+    where: {
+      marketStudyId: studyId,
+      status: {
+        in: [
+          TRANSFER_STATUS.NOT_SOLD,
+          TRANSFER_STATUS.ENDED,
+          TRANSFER_STATUS.EXPIRED,
+        ],
+      },
+    },
+    select: { id: true, playerDetailsId: true },
+  });
+
+  if (unsold.length === 0) return { deleted: 0 };
+
+  const ids = unsold.map((p) => p.id);
+  const playerDetailsIds = unsold.map((p) => p.playerDetailsId);
+
+  await prisma.transferPlayer.deleteMany({ where: { id: { in: ids } } });
+
+  for (const pdId of playerDetailsIds) {
+    const refCount = await prisma.transferPlayer.count({
+      where: { playerDetailsId: pdId },
+    });
+    if (refCount === 0) {
+      await prisma.playerDetails
+        .delete({ where: { id: pdId } })
+        .catch(() => {});
+    }
+  }
+
+  return { deleted: ids.length };
+}
+
 export async function createCustomChart(
   prisma: PrismaClient,
   studyId: number,
