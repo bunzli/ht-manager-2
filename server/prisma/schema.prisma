@@ -152,3 +152,14 @@ model TransferPlayer {
   @@index([marketStudyId])
   @@map("transfer_player")
 }
+
+model PriceModel {
+  id           Int      @id @default(autoincrement())
+  coefficients String
+  featureNames String
+  metadata     String
+  trainedAt    DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  @@map("price_model")
+}

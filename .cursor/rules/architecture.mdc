@@ -21,6 +21,7 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 |---|---|
 | `routes/players.ts` | Express router for `/api/players`. Parses params, delegates to `player.service`, returns JSON. |
 | `routes/marketStudies.ts` | Express router for `/api/market-studies`. Parses params, delegates to `marketStudy.service`, returns JSON. |
+| `routes/priceModel.ts` | Express router for `/api/price-model`. Train model, get status, predict prices. Delegates to `pricePredictor.service`. |
 
 ### Services — business logic
 
@@ -30,6 +31,7 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 | `services/marketStudy.service.ts` | Market study lifecycle: create, list, detail, search, bulk-update, resolve transfers. Also manages custom chart configs (create/delete). |
 | `services/transferResolver.ts` | Matches pending transfer listings to completed transfers and resolves final prices/deadlines. |
 | `services/soldPriceAggregator.ts` | Aggregates sold-player prices into chart-ready series (by age, by specialty). Custom charts use client-side aggregation instead. |
+| `services/pricePredictor.service.ts` | Price prediction orchestration: trains OLS regression model from sold players, predicts prices for squad players, study players, or arbitrary skill sets. |
 
 ### CHPP integration
 
@@ -48,6 +50,7 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 | `lib/constants.ts` | Shared constants (`ONE_WEEK_MS`) and status enums (`TRANSFER_STATUS`, `MARKET_STUDY_STATUS`). |
 | `lib/errorMiddleware.ts` | Global Express error handler — catches unhandled exceptions and returns a uniform error response. |
 | `lib/positionRatings.ts` | HT position-skill weight coefficients; computes a 0–20 rating per position for a player. |
+| `lib/regression.ts` | Pure-math OLS multivariate linear regression: feature extraction, training (normal equation), prediction. Used by `pricePredictor.service`. |
 
 ### Jobs
 
@@ -74,12 +77,14 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 | `pages/PlayerDetailPage.tsx` | Single-player view: skills, position ratings, position-override form. Uses React Query. |
 | `pages/MarketStudiesPage.tsx` | Lists market studies, allows creating new ones. Uses React Query. |
 | `pages/MarketStudyDetailPage.tsx` | Orchestrates study detail: metrics, filters, charts, results table. Delegates to sub-components and the `useMarketStudy` hook. |
+| `pages/PriceModelPage.tsx` | Price prediction model management: view status, train/retrain the model. |
 
 ### Hooks
 
 | File | Responsibility |
 |---|---|
 | `hooks/useMarketStudy.ts` | `useMarketStudyData` — fetches and caches a study, manages selected IDs and action handlers. `useStudyFilters` — filter/sort state for the results table. |
+| `hooks/usePriceModel.ts` | React Query hooks for price model: `usePriceModelStatus` (status + train mutation), `usePlayerPrediction`, `useStudyPredictions`. |
 
 ### Components — market study
 
@@ -125,6 +130,7 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 | `lib/positionRatings.ts` | Position display metadata and weight definitions (client-side mirror of server ratings). |
 | `lib/format.ts` | `formatNumber` and `formatMoney` — locale-aware number formatting. |
 | `lib/chartAggregator.ts` | Client-side aggregation for custom charts: filters sold players, groups by a chosen dimension, computes avg price per bucket. |
+| `lib/priceModelApi.ts` | Typed API client for `/api/price-model` endpoints: train, status, predict for player/study/skills. |
 
 ### Storybook & test data
 

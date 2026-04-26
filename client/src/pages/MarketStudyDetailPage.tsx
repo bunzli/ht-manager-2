@@ -17,6 +17,7 @@ import { CustomChart } from "../components/market-study/CustomChart";
 import { StudyResultsTable, applyFilters } from "../components/market-study/StudyResultsTable";
 import { specialtyLabel } from "../lib/skills";
 import { SKILL_TYPE_MAP, SKILL_TYPE_LABELS } from "../lib/skillTypes";
+import { useStudyPredictions } from "../hooks/usePriceModel";
 import type { TransferSearchParams, CustomChartConfig } from "../lib/types";
 
 interface Props {
@@ -109,6 +110,8 @@ export function MarketStudyDetailPage({ studyId, onBack }: Props) {
 
   const { filters, setFilters, updateFilter, clearFilters, hasActiveFilters } =
     useStudyFilters();
+
+  const { predictions } = useStudyPredictions(studyId);
 
   const handleBarClick = useCallback(
     (config: CustomChartConfig, bucketKey: number) => {
@@ -246,6 +249,7 @@ export function MarketStudyDetailPage({ studyId, onBack }: Props) {
           selectedIds={selectedIds}
           onToggleRow={toggleRow}
           onToggleAll={toggleAll}
+          predictions={predictions}
         />
       </div>
     </div>

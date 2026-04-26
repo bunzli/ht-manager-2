@@ -12,6 +12,7 @@ type SortKey =
   | "specialty"
   | "tsi"
   | "price"
+  | "estPrice"
   | "deadline"
   | (typeof SKILL_KEYS)[number]["key"];
 type SortDir = "asc" | "desc";
@@ -145,6 +146,7 @@ function sortPlayers(
   list: TransferPlayerRow[],
   sortKey: SortKey,
   sortDir: SortDir,
+  predictions?: Record<number, number> | null,
 ): TransferPlayerRow[] {
   return [...list].sort((a, b) => {
     let cmp = 0;
@@ -180,6 +182,9 @@ function sortPlayers(
         cmp = priceA - priceB;
         break;
       }
+      case "estPrice":
+        cmp = (predictions?.[a.id] ?? 0) - (predictions?.[b.id] ?? 0);
+        break;
       case "deadline":
         cmp = a.deadline.localeCompare(b.deadline);
         break;
@@ -203,6 +208,7 @@ interface Props {
   selectedIds: Set<number>;
   onToggleRow: (id: number) => void;
   onToggleAll: (visibleIds: number[]) => void;
+  predictions?: Record<number, number> | null;
 }
 
 export function StudyResultsTable({
@@ -211,6 +217,7 @@ export function StudyResultsTable({
   selectedIds,
   onToggleRow,
   onToggleAll,
+  predictions,
 }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("deadline");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -225,11 +232,12 @@ export function StudyResultsTable({
   };
 
   const filtered = useMemo(
-    () => sortPlayers(applyFilters(players, filters), sortKey, sortDir),
-    [players, filters, sortKey, sortDir],
+    () => sortPlayers(applyFilters(players, filters), sortKey, sortDir, predictions),
+    [players, filters, sortKey, sortDir, predictions],
   );
 
-  const colCount = 1 + 1 + 1 + 1 + 1 + SKILL_KEYS.length + 1 + 1 + 1;
+  const hasPredictions = predictions && Object.keys(predictions).length > 0;
+  const colCount = 1 + 1 + 1 + 1 + 1 + SKILL_KEYS.length + 1 + 1 + (hasPredictions ? 1 : 0) + 1;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
@@ -308,6 +316,15 @@ export function StudyResultsTable({
               currentDir={sortDir}
               onSort={handleSort}
             />
+            {hasPredictions && (
+              <SortHeader
+                label="Est."
+                sortKey="estPrice"
+                currentKey={sortKey}
+                currentDir={sortDir}
+                onSort={handleSort}
+              />
+            )}
             <SortHeader
               label="Deadline"
               sortKey="deadline"
@@ -419,6 +436,17 @@ export function StudyResultsTable({
                       <span className="text-gray-400">—</span>
                     )}
                   </td>
+                  {hasPredictions && (
+                    <td className="px-2 py-1.5 tabular-nums whitespace-nowrap">
+                      {predictions[tp.id] != null ? (
+                        <span className="text-blue-600 font-medium">
+                          {formatMoney(predictions[tp.id])}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
+                  )}
                   <td className="px-2 py-1.5 text-gray-500 whitespace-nowrap">
                     {deadline
                       ? deadline.toLocaleDateString(undefined, {

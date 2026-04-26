@@ -15,6 +15,7 @@ import {
 } from "../lib/skills";
 import { formatNumber, formatMoney } from "../lib/format";
 import { displayName } from "../lib/playerUtils";
+import { usePlayerPrediction } from "../hooks/usePriceModel";
 import type { Player, PlayerChange } from "../lib/types";
 
 interface Props {
@@ -125,6 +126,8 @@ export function PlayerDetailPage({ playerId, onBack }: Props) {
     queryKey: ["player", playerId],
     queryFn: () => fetchPlayer(playerId),
   });
+
+  const { predictedPrice } = usePlayerPrediction(playerId);
 
   const player = data?.player ?? null;
   const allChanges = data?.allChanges ?? [];
@@ -245,6 +248,9 @@ export function PlayerDetailPage({ playerId, onBack }: Props) {
               <StatItem label="Leadership" value={skillLabel(player.leadership)} />
               <StatItem label="Loyalty" value={skillLabel(player.loyalty)} />
               {player.isAbroad && <StatItem label="Abroad" value="Yes" />}
+              {predictedPrice !== null && (
+                <StatItem label="Est. Price" value={formatMoney(predictedPrice)} />
+              )}
             </div>
           </div>
         </div>

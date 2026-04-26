@@ -1,0 +1,9 @@
+-- CreateTable
+CREATE TABLE "price_model" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "coefficients" TEXT NOT NULL,
+    "featureNames" TEXT NOT NULL,
+    "metadata" TEXT NOT NULL,
+    "trainedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
