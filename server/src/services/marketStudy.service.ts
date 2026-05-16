@@ -23,6 +23,7 @@ async function fetchAllPages(
       pageIndex,
     });
 
+    console.log(`[MarketStudy] fetchAllPages page=${pageIndex}: got ${response.Results.length} results (ItemCount=${response.ItemCount})`);
     allResults.push(...response.Results);
 
     const totalItems = response.ItemCount;
@@ -38,6 +39,7 @@ async function fetchAllPages(
     pageIndex++;
   }
 
+  console.log(`[MarketStudy] fetchAllPages total: ${allResults.length} results`);
   return allResults;
 }
 
@@ -46,8 +48,10 @@ export async function runSearch(
   searchParams: TransferSearchParams,
   specialties: number[],
 ) {
+  console.log(`[MarketStudy] runSearch: params=${JSON.stringify(searchParams)} specialties=${JSON.stringify(specialties)}`);
   if (specialties.length === 0) {
     const results = await fetchAllPages(chpp, searchParams);
+    console.log(`[MarketStudy] runSearch (no specialty): ${results.length} total results`);
     return {
       ItemCount: results.length,
       PageSize: 25,
@@ -73,6 +77,7 @@ export async function runSearch(
     }
   }
 
+  console.log(`[MarketStudy] runSearch (with specialties): ${merged.length} merged results`);
   return {
     ItemCount: merged.length,
     PageSize: 25,
@@ -295,6 +300,58 @@ export async function getStudyDetail(prisma: PrismaClient, id: number) {
   const study = await getStudyWithPlayers(prisma, id);
   if (!study) return null;
   return buildStudyResponse(study);
+}
+
+export type EditStudyInput = {
+  name?: string;
+  searchParams?: Partial<TransferSearchParams>;
+  specialties?: number[];
+};
+
+/** Updates study metadata only; does not re-run CHPP search. */
+export async function editStudy(
+  prisma: PrismaClient,
+  id: number,
+  input: EditStudyInput,
+) {
+  const existing = await prisma.marketStudy.findUnique({ where: { id } });
+  if (!existing) return null;
+
+  const { searchParams: baseParams, specialties: baseSpecs } = parseStoredParams(
+    existing.searchParams,
+  );
+
+  const mergedParams: TransferSearchParams = {
+    ...baseParams,
+    ...(input.searchParams ?? {}),
+  };
+
+  const specialties =
+    input.specialties !== undefined ? input.specialties : baseSpecs;
+
+  const name = input.name !== undefined ? input.name : existing.name;
+
+  await prisma.marketStudy.update({
+    where: { id },
+    data: {
+      name,
+      searchParams: JSON.stringify({ ...mergedParams, specialties }),
+    },
+  });
+
+  const updated = await prisma.marketStudy.findUnique({ where: { id } });
+  if (!updated) return null;
+
+  return {
+    study: {
+      id: updated.id,
+      name: updated.name,
+      searchParams: updated.searchParams,
+      status: updated.status,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    },
+  };
 }
 
 export async function updateStudyPlayers(

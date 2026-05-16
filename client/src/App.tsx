@@ -10,7 +10,8 @@ import {
 import { PlayersPage } from "./pages/PlayersPage";
 import { PlayerDetailPage } from "./pages/PlayerDetailPage";
 import { MarketStudiesPage } from "./pages/MarketStudiesPage";
-import { MarketStudyDetailPage } from "./pages/MarketStudyDetailPage";
+import { MarketStudyInfoPage } from "./pages/MarketStudyInfoPage";
+import { MarketAnalyticsPage } from "./pages/MarketAnalyticsPage";
 import { PriceModelPage } from "./pages/PriceModelPage";
 
 type Tab = "squad" | "market" | "price-model";
@@ -32,11 +33,11 @@ function SquadDetailRoute() {
   );
 }
 
-function MarketDetailRoute() {
+function MarketStudyRoute() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
   return (
-    <MarketStudyDetailPage
+    <MarketStudyInfoPage
       studyId={Number(studyId)}
       onBack={() => navigate("/market")}
     />
@@ -92,6 +93,7 @@ export default function App() {
             }
           />
           <Route path="/squad/:playerId" element={<SquadDetailRoute />} />
+          <Route path="/market/analytics" element={<MarketAnalyticsPage />} />
           <Route
             path="/market"
             element={
@@ -100,7 +102,7 @@ export default function App() {
               />
             }
           />
-          <Route path="/market/:studyId" element={<MarketDetailRoute />} />
+          <Route path="/market/:studyId" element={<MarketStudyRoute />} />
           <Route path="/price-model" element={<PriceModelPage />} />
         </Routes>
       </main>

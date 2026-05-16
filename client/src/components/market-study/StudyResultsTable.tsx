@@ -209,6 +209,11 @@ interface Props {
   onToggleRow: (id: number) => void;
   onToggleAll: (visibleIds: number[]) => void;
   predictions?: Record<number, number> | null;
+  /** When true, rows are already filtered; only sort is applied. */
+  skipFilters?: boolean;
+  /** Show a Study column (e.g. multi-study analytics). */
+  showStudyColumn?: boolean;
+  studyNamesById?: Record<number, string>;
 }
 
 export function StudyResultsTable({
@@ -218,6 +223,9 @@ export function StudyResultsTable({
   onToggleRow,
   onToggleAll,
   predictions,
+  skipFilters,
+  showStudyColumn,
+  studyNamesById,
 }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("deadline");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -232,12 +240,29 @@ export function StudyResultsTable({
   };
 
   const filtered = useMemo(
-    () => sortPlayers(applyFilters(players, filters), sortKey, sortDir, predictions),
-    [players, filters, sortKey, sortDir, predictions],
+    () =>
+      sortPlayers(
+        skipFilters ? players : applyFilters(players, filters),
+        sortKey,
+        sortDir,
+        predictions,
+      ),
+    [players, filters, sortKey, sortDir, predictions, skipFilters],
   );
 
   const hasPredictions = predictions && Object.keys(predictions).length > 0;
-  const colCount = 1 + 1 + 1 + 1 + 1 + SKILL_KEYS.length + 1 + 1 + (hasPredictions ? 1 : 0) + 1;
+  const colCount =
+    1 +
+    1 +
+    (showStudyColumn ? 1 : 0) +
+    1 +
+    1 +
+    1 +
+    SKILL_KEYS.length +
+    1 +
+    1 +
+    (hasPredictions ? 1 : 0) +
+    1;
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
@@ -275,6 +300,11 @@ export function StudyResultsTable({
               onSort={handleSort}
               className="sticky left-0 bg-gray-50 z-10"
             />
+            {showStudyColumn && (
+              <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                Study
+              </th>
+            )}
             <SortHeader
               label="Age"
               sortKey="age"
@@ -391,6 +421,11 @@ export function StudyResultsTable({
                       </a>
                     </span>
                   </td>
+                  {showStudyColumn && (
+                    <td className="px-2 py-1.5 text-gray-600 whitespace-nowrap max-w-[140px] truncate" title={studyNamesById?.[tp.marketStudyId ?? -1]}>
+                      {studyNamesById?.[tp.marketStudyId ?? -1] ?? "—"}
+                    </td>
+                  )}
                   <td className="px-2 py-1.5 text-gray-600 whitespace-nowrap tabular-nums">
                     {d.age}y {d.ageDays}d
                   </td>

@@ -67,6 +67,7 @@ export class ChppClient {
     }
 
     const url = `${BASE_URL}?${searchParams.toString()}`;
+    console.log(`[CHPP] → ${params.file} params:`, params);
 
     const authHeader = this.oauth.toHeader(
       this.oauth.authorize({ url, method: "GET" }, this.token),
@@ -82,13 +83,17 @@ export class ChppClient {
 
     if (!response.ok) {
       const text = await response.text();
+      console.error(`[CHPP] ✗ HTTP ${response.status} for ${params.file}:`, text.slice(0, 500));
       throw new Error(
         `CHPP API error ${response.status}: ${text.slice(0, 500)}`,
       );
     }
 
     const xml = await response.text();
-    return this.xmlParser.parse(xml) as Record<string, unknown>;
+    console.log(`[CHPP] ← ${params.file} raw XML (first 500 chars):`, xml.slice(0, 500));
+    const parsed = this.xmlParser.parse(xml) as Record<string, unknown>;
+    console.log(`[CHPP] ← ${params.file} parsed keys:`, Object.keys((parsed.HattrickData as Record<string, unknown>) ?? {}));
+    return parsed;
   }
 
   async getPlayers(teamId: number | string): Promise<ChppPlayersResponse> {

@@ -284,6 +284,15 @@ export function parseTransferSearch(data: Record<string, unknown>): TransferSear
       | Record<string, unknown>,
   );
 
+  console.log("[CHPP] parseTransferSearch: TransferSearch keys:", Object.keys(ts ?? {}));
+  console.log("[CHPP] parseTransferSearch: ItemCount=%s PageSize=%s PageIndex=%s raw results count=%d",
+    ts?.ItemCount, ts?.PageSize, ts?.PageIndex, rawResults.length);
+  if (rawResults.length > 0) {
+    console.log("[CHPP] parseTransferSearch: first result keys:", Object.keys(rawResults[0]));
+    const firstDetails = (rawResults[0] as Record<string, unknown>).Details;
+    console.log("[CHPP] parseTransferSearch: first result Details keys:", firstDetails ? Object.keys(firstDetails as Record<string, unknown>) : "NO DETAILS");
+  }
+
   return {
     ItemCount: toInt(ts?.ItemCount),
     PageSize: toInt(ts?.PageSize),

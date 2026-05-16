@@ -229,3 +229,10 @@ export interface MarketStudyDetail {
   priceBySpecialty: PriceBySpecialty[];
   customCharts: CustomChartConfig[];
 }
+
+/** PATCH /market-studies/:id body */
+export interface PatchMarketStudyPayload {
+  name?: string;
+  searchParams?: Partial<TransferSearchParams>;
+  specialties?: number[];
+}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { StudiesSubNav } from "../components/market-study/StudiesSubNav";
 import { MarketStudyForm } from "../components/MarketStudyForm";
 import { ActionMessage } from "../components/ui/ActionMessage";
 import { fetchMarketStudies, updateStudy } from "../lib/api";
@@ -59,6 +60,7 @@ export function MarketStudiesPage({ onStudyClick }: Props) {
 
   return (
     <div>
+      <StudiesSubNav />
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Market Studies</h2>
         {!showForm && (

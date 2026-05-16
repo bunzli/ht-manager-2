@@ -9,6 +9,7 @@ import {
   createStudy,
   listStudies,
   getStudyDetail,
+  editStudy,
   updateStudyPlayers,
   bulkResolve,
   bulkDelete,
@@ -92,6 +93,31 @@ export function createMarketStudiesRouter(
         res.json(result);
       } catch (err) {
         errorResponse(res, "Failed to list market studies", err);
+      }
+    }),
+  );
+
+  router.patch(
+    "/:id",
+    asyncHandler(async (req: Request, res: Response) => {
+      const id = parseIntParam(req, res, "id");
+      if (id === null) return;
+
+      const body = req.body as {
+        name?: string;
+        searchParams?: Partial<TransferSearchParams>;
+        specialties?: number[];
+      };
+
+      try {
+        const result = await editStudy(prisma, id, body);
+        if (!result) {
+          res.status(404).json({ error: "Market study not found" });
+          return;
+        }
+        res.json(result);
+      } catch (err) {
+        errorResponse(res, "Failed to update market study", err);
       }
     }),
   );

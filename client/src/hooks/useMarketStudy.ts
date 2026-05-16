@@ -28,6 +28,7 @@ export function useMarketStudyData(studyId: number) {
   const [addingChart, setAddingChart] = useState(false);
   const [removingChartId, setRemovingChartId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshTick, setRefreshTick] = useState(0);
   const [updating, setUpdating] = useState(false);
   const [updatingSelected, setUpdatingSelected] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -51,7 +52,11 @@ export function useMarketStudyData(studyId: number) {
         setError(err instanceof Error ? err.message : "Unknown error"),
       )
       .finally(() => setLoading(false));
-  }, [studyId]);
+  }, [studyId, refreshTick]);
+
+  const reload = useCallback(() => {
+    setRefreshTick((t) => t + 1);
+  }, []);
 
   const handleUpdate = useCallback(async () => {
     setUpdating(true);
@@ -265,6 +270,7 @@ export function useMarketStudyData(studyId: number) {
     deletingUnsold,
     handleAddChart,
     handleRemoveChart,
+    reload,
   };
 }
 

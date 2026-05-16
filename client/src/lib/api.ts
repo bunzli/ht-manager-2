@@ -9,6 +9,7 @@ import {
   MarketStudyDetail,
   CustomChartConfig,
   ChartFilter,
+  PatchMarketStudyPayload,
 } from "./types";
 
 const BASE = "/api";
@@ -25,6 +26,19 @@ async function fetchJson<T>(path: string): Promise<T> {
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API ${res.status}: ${text.slice(0, 300)}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+async function patchJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
@@ -90,6 +104,13 @@ export function fetchMarketStudies(): Promise<MarketStudyListItem[]> {
 
 export function fetchMarketStudy(id: number): Promise<MarketStudyDetail> {
   return fetchJson<MarketStudyDetail>(`/market-studies/${id}`);
+}
+
+export function patchMarketStudy(
+  id: number,
+  payload: PatchMarketStudyPayload,
+): Promise<{ study: MarketStudy }> {
+  return patchJson<{ study: MarketStudy }>(`/market-studies/${id}`, payload);
 }
 
 export function updateStudy(id: number): Promise<MarketStudyDetail> {
