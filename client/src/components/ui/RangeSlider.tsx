@@ -110,7 +110,7 @@ export function RangeSlider({
         {/* Lo thumb */}
         <div
           className="absolute w-4 h-4 rounded-full bg-white border-2 border-blue-500 shadow cursor-grab active:cursor-grabbing -translate-x-1/2 hover:scale-110 transition-transform"
-          style={{ left: `${loPercent}%` }}
+          style={{ left: `${loPercent}%`, zIndex: lo >= hi ? 3 : 2 }}
           onPointerDown={startDragLo}
           role="slider"
           aria-label={`${label} minimum`}
