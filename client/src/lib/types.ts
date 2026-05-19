@@ -43,6 +43,40 @@ export interface Player {
   positionScores: Record<string, number>;
   positionOverride: string | null;
   recentChanges: PlayerChange[];
+  lastMatchDate?: string | null;
+  lastMatchPositionCode?: number | null;
+  lastMatchPlayedMinutes?: number;
+  trainingUnits?: number;
+  trainingFullWeeks?: number;
+  trainingPartial?: number;
+  trainingLastPopAt?: string | null;
+}
+
+export interface TrainingProgress {
+  playerId: number;
+  totalUnits: number;
+  fullWeeks: number;
+  partialFraction: number;
+  lastPopAt: string | null;
+  lastMatch: {
+    date: string | null;
+    positionCode: number | null;
+    playedMinutes: number;
+  };
+}
+
+export interface TrainingProgramDto {
+  id: number;
+  label: string;
+  popSkillKeys: string[];
+}
+
+export interface TrainingProgramsResponse {
+  programs: TrainingProgramDto[];
+}
+
+export interface TrainingSettings {
+  trainingTypeId: number | null;
 }
 
 export interface PlayersResponse {

@@ -137,6 +137,27 @@ function parsePlayer(p: Record<string, unknown>): ChppPlayer {
           ),
         }
       : undefined,
+    LastMatch: p.LastMatch
+      ? (() => {
+          const lm = p.LastMatch as Record<string, unknown>;
+          return {
+            Date: lm.Date ? stockholmToUtcIso(String(lm.Date)) : "",
+            MatchId: toInt(lm.MatchId),
+            PositionCode: toInt(lm.PositionCode),
+            PlayedMinutes: toInt(lm.PlayedMinutes),
+          };
+        })()
+      : undefined,
+  };
+}
+
+export function parseTraining(data: Record<string, unknown>): {
+  TrainingType: number;
+} {
+  const hd = data.HattrickData as Record<string, unknown>;
+  const team = hd.Team as Record<string, unknown>;
+  return {
+    TrainingType: toInt(team.TrainingType),
   };
 }
 

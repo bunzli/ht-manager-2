@@ -13,11 +13,13 @@ import { MarketStudiesPage } from "./pages/MarketStudiesPage";
 import { MarketStudyInfoPage } from "./pages/MarketStudyInfoPage";
 import { MarketAnalyticsPage } from "./pages/MarketAnalyticsPage";
 import { PriceModelPage } from "./pages/PriceModelPage";
+import { TrainingPage } from "./pages/TrainingPage";
 
-type Tab = "squad" | "market" | "price-model";
+type Tab = "squad" | "training" | "market" | "price-model";
 
 const TABS: { id: Tab; label: string; path: string }[] = [
   { id: "squad", label: "My Squad", path: "/squad" },
+  { id: "training", label: "Training", path: "/training" },
   { id: "market", label: "Market Studies", path: "/market" },
   { id: "price-model", label: "Price Model", path: "/price-model" },
 ];
@@ -52,7 +54,9 @@ export default function App() {
     ? "market"
     : pathname.startsWith("/price-model")
       ? "price-model"
-      : "squad";
+      : pathname.startsWith("/training")
+        ? "training"
+        : "squad";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -93,6 +97,14 @@ export default function App() {
             }
           />
           <Route path="/squad/:playerId" element={<SquadDetailRoute />} />
+          <Route
+            path="/training"
+            element={
+              <TrainingPage
+                onPlayerClick={(id) => navigate(`/squad/${id}`)}
+              />
+            }
+          />
           <Route path="/market/analytics" element={<MarketAnalyticsPage />} />
           <Route
             path="/market"

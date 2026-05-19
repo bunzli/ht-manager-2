@@ -15,6 +15,7 @@ import {
   parseTransferSearch,
   parsePlayerTransfers,
   parseAvatars,
+  parseTraining,
 } from "./parsers";
 
 const BASE_URL = "https://chpp.hattrick.org/chppxml.ashx";
@@ -101,8 +102,18 @@ export class ChppClient {
       file: "players",
       version: "2.8",
       teamID: teamId,
+      includeMatchInfo: "true",
     });
     return parsePlayers(data);
+  }
+
+  async getTraining(teamId: number | string): Promise<{ TrainingType: number }> {
+    const data = await this.request({
+      file: "training",
+      version: "1.0",
+      teamID: teamId,
+    });
+    return parseTraining(data);
   }
 
   async getPlayerDetails(playerId: number | string): Promise<ChppPlayerDetails> {

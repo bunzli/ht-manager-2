@@ -4,11 +4,13 @@ import { specialtyLabel, specialtyIcon, skillColor, skillLabel, SKILL_KEYS } fro
 import { formatNumber, formatMoney } from "../lib/format";
 import { POSITION_RATINGS } from "../lib/positionRatings";
 import { displayName, hattrickPlayerUrl } from "../lib/playerUtils";
+import { DumbbellRow } from "./training/DumbbellRow";
 import type { Player, PlayerChange } from "../lib/types";
 
 interface PlayerCardProps {
   player: Player;
   onClick?: () => void;
+  trainingProgramLabel?: string;
 }
 
 function InjuryIcon({ level }: { level: number }) {
@@ -44,7 +46,11 @@ function CardsIcon({ cards }: { cards: number }) {
   );
 }
 
-export function PlayerCard({ player, onClick }: PlayerCardProps) {
+export function PlayerCard({
+  player,
+  onClick,
+  trainingProgramLabel,
+}: PlayerCardProps) {
   const specialty = specialtyLabel(player.specialty);
   const specIcon = specialtyIcon(player.specialty);
   const hasChanges = player.recentChanges.length > 0;
@@ -173,6 +179,19 @@ export function PlayerCard({ player, onClick }: PlayerCardProps) {
                 {(Math.round(bestPosition.score * 10) / 10).toFixed(1)}
               </span>
             </span>
+            {(player.trainingFullWeeks != null ||
+              player.trainingPartial != null) && (
+              <>
+                <span className="text-gray-300">|</span>
+                <DumbbellRow
+                  compact
+                  fullWeeks={player.trainingFullWeeks ?? 0}
+                  partialFraction={player.trainingPartial ?? 0}
+                  totalUnits={player.trainingUnits}
+                  programLabel={trainingProgramLabel}
+                />
+              </>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5 mb-2">

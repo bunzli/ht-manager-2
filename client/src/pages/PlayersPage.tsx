@@ -4,6 +4,8 @@ import { PlayerList } from "../components/PlayerList";
 import { fetchPlayers, refreshPlayers } from "../lib/api";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { ErrorAlert } from "../components/ui/ErrorAlert";
+import { TrainingProgramSelect } from "../components/training/TrainingProgramSelect";
+import { useTrainingProgramId } from "../hooks/useTraining";
 
 interface PlayersPageProps {
   onPlayerClick: (playerId: number) => void;
@@ -13,10 +15,11 @@ export function PlayersPage({ onPlayerClick }: PlayersPageProps) {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
+  const { programId, setProgramId, programLabel } = useTrainingProgramId();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["players"],
-    queryFn: fetchPlayers,
+    queryKey: ["players", programId],
+    queryFn: () => fetchPlayers(programId),
   });
 
   const handleRefresh = async () => {
@@ -24,7 +27,8 @@ export function PlayersPage({ onPlayerClick }: PlayersPageProps) {
     setRefreshError(null);
     try {
       const freshData = await refreshPlayers();
-      queryClient.setQueryData(["players"], freshData);
+      queryClient.setQueryData(["players", programId], freshData);
+      queryClient.invalidateQueries({ queryKey: ["training", "progress"] });
     } catch (err) {
       setRefreshError(
         err instanceof Error ? err.message : "Unknown error",
@@ -50,13 +54,19 @@ export function PlayersPage({ onPlayerClick }: PlayersPageProps) {
             </p>
           )}
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={isLoading || refreshing}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors self-start sm:self-auto"
-        >
-          {refreshing ? "Fetching from Hattrick..." : "Refresh"}
-        </button>
+        <div className="flex flex-wrap items-end gap-2 self-start sm:self-auto">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-gray-500">Training</span>
+            <TrainingProgramSelect value={programId} onChange={setProgramId} />
+          </label>
+          <button
+            onClick={handleRefresh}
+            disabled={isLoading || refreshing}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+          >
+            {refreshing ? "Fetching from Hattrick..." : "Refresh"}
+          </button>
+        </div>
       </div>
 
       {displayError && (
@@ -71,6 +81,7 @@ export function PlayersPage({ onPlayerClick }: PlayersPageProps) {
         <PlayerList
           players={data?.players ?? []}
           onPlayerClick={onPlayerClick}
+          trainingProgramLabel={programLabel}
         />
       )}
     </div>

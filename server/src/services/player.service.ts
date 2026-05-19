@@ -3,6 +3,15 @@ import { ChppClient } from "../chpp/client";
 import { ChppPlayer, ChppPlayerAvatar } from "../chpp/types";
 import { computePositionScores } from "../lib/positionRatings";
 import { ONE_WEEK_MS } from "../lib/constants";
+import {
+  getTeamSettings,
+  getTrainingProgress,
+  lastMatchFromDetails,
+  lastMatchFromPlayer,
+  progressMapByPlayerId,
+  recordWeekFromLastMatch,
+  syncTrainingTypeFromChpp,
+} from "./training.service";
 
 const SKILL_FIELDS = [
   "staminaSkill",
@@ -77,6 +86,9 @@ function playerToDetailsData(p: ChppPlayer, avatar?: ChppPlayerAvatar) {
     transferListed: p.TransferListed,
     avatarBackground: avatar?.backgroundImage ?? "",
     avatarLayers: avatar ? JSON.stringify(avatar.layers) : "[]",
+    lastMatchDate: p.LastMatch?.Date ?? null,
+    lastMatchPositionCode: p.LastMatch?.PositionCode ?? null,
+    lastMatchPlayedMinutes: p.LastMatch?.PlayedMinutes ?? 0,
   };
 }
 
@@ -118,7 +130,10 @@ async function buildPlayersWithChanges(
   );
 }
 
-export async function getPlayersFromDb(prisma: PrismaClient) {
+export async function getPlayersFromDb(
+  prisma: PrismaClient,
+  trainingTypeId?: number,
+) {
   const teamId = process.env.CHPP_TEAM_ID;
   if (!teamId) throw new Error("CHPP_TEAM_ID not configured");
 
@@ -145,12 +160,20 @@ export async function getPlayersFromDb(prisma: PrismaClient) {
       ]),
   );
   const playerIds = [...detailsMap.keys()];
-  const players = await buildPlayersWithChanges(
+  let players = await buildPlayersWithChanges(
     prisma,
     playerIds,
     detailsMap,
     weekAgo,
   );
+
+  if (trainingTypeId) {
+    players = (await attachTrainingProgress(
+      prisma,
+      players as Record<string, unknown>[],
+      trainingTypeId,
+    )) as typeof players;
+  }
 
   const fetchedAt = trackings.reduce(
     (latest, t) => (t.lastUpdatedAt > latest ? t.lastUpdatedAt : latest),
@@ -175,7 +198,10 @@ export async function refreshPlayersFromChpp(
   const [response, avatarsResponse] = await Promise.all([
     chpp.getPlayers(teamId),
     chpp.getAvatars(teamId).catch(() => null),
+    syncTrainingTypeFromChpp(prisma, chpp, teamId),
   ]);
+  const settings = await getTeamSettings(prisma);
+  const defaultTrainingTypeId = settings.trainingTypeId ?? 8;
   const now = new Date();
 
   const avatarMap = new Map<number, ChppPlayerAvatar>();
@@ -232,6 +258,16 @@ export async function refreshPlayersFromChpp(
       },
     });
 
+    const lastMatch = lastMatchFromPlayer(player);
+    if (lastMatch) {
+      await recordWeekFromLastMatch(
+        prisma,
+        player.PlayerID,
+        lastMatch,
+        defaultTrainingTypeId,
+      );
+    }
+
     const recentChanges = await prisma.playerChange.findMany({
       where: {
         playerId: player.PlayerID,
@@ -254,7 +290,47 @@ export async function refreshPlayersFromChpp(
   };
 }
 
-export async function getPlayerDetail(prisma: PrismaClient, playerId: number) {
+async function attachTrainingProgress(
+  prisma: PrismaClient,
+  players: Record<string, unknown>[],
+  trainingTypeId: number,
+) {
+  const playerIds = players.map((p) => p.playerId as number);
+  const lastMatchByPlayer = new Map(
+    players.map((p) => [
+      p.playerId as number,
+      lastMatchFromDetails({
+        lastMatchDate: (p.lastMatchDate as string | null) ?? null,
+        lastMatchPositionCode: (p.lastMatchPositionCode as number | null) ?? null,
+        lastMatchPlayedMinutes: (p.lastMatchPlayedMinutes as number) ?? 0,
+      }),
+    ]),
+  );
+  const progress = await getTrainingProgress(
+    prisma,
+    playerIds,
+    trainingTypeId,
+    lastMatchByPlayer,
+  );
+  const progressMap = progressMapByPlayerId(progress);
+  return players.map((p) => {
+    const prog = progressMap.get(p.playerId as number);
+    if (!prog) return p;
+    return {
+      ...p,
+      trainingUnits: prog.totalUnits,
+      trainingFullWeeks: prog.fullWeeks,
+      trainingPartial: prog.partialFraction,
+      trainingLastPopAt: prog.lastPopAt,
+    };
+  });
+}
+
+export async function getPlayerDetail(
+  prisma: PrismaClient,
+  playerId: number,
+  trainingTypeId?: number,
+) {
   const tracking = await prisma.playerTracking.findUnique({
     where: { playerId },
     include: { latestDetails: true },
@@ -272,14 +348,20 @@ export async function getPlayerDetail(prisma: PrismaClient, playerId: number) {
     (c) => new Date(c.detectedAt) >= weekAgo,
   );
 
+  const basePlayer = {
+    ...withPositionScores(
+      tracking.latestDetails as unknown as Record<string, unknown>,
+    ),
+    positionOverride: tracking.positionOverride ?? null,
+    recentChanges,
+  };
+
+  const player = trainingTypeId
+    ? (await attachTrainingProgress(prisma, [basePlayer], trainingTypeId))[0]
+    : basePlayer;
+
   return {
-    player: {
-      ...withPositionScores(
-        tracking.latestDetails as unknown as Record<string, unknown>,
-      ),
-      positionOverride: tracking.positionOverride ?? null,
-      recentChanges,
-    },
+    player,
     allChanges,
   };
 }

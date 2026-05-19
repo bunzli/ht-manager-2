@@ -16,6 +16,10 @@ import {
 import { formatNumber, formatMoney } from "../lib/format";
 import { displayName } from "../lib/playerUtils";
 import { usePlayerPrediction } from "../hooks/usePriceModel";
+import { useTrainingProgramId } from "../hooks/useTraining";
+import { DumbbellRow } from "../components/training/DumbbellRow";
+import { TrainingProgramSelect } from "../components/training/TrainingProgramSelect";
+import { lastMatchRoleLabel } from "../lib/matchRoleMapping";
 import type { Player, PlayerChange } from "../lib/types";
 
 interface Props {
@@ -121,10 +125,11 @@ export function PlayerDetailPage({ playerId, onBack }: Props) {
   const queryClient = useQueryClient();
   const [overrideSaving, setOverrideSaving] = useState(false);
   const [overrideError, setOverrideError] = useState<string | null>(null);
+  const { programId, setProgramId, programLabel } = useTrainingProgramId();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["player", playerId],
-    queryFn: () => fetchPlayer(playerId),
+    queryKey: ["player", playerId, programId],
+    queryFn: () => fetchPlayer(playerId, programId),
   });
 
   const { predictedPrice } = usePlayerPrediction(playerId);
@@ -279,6 +284,44 @@ export function PlayerDetailPage({ playerId, onBack }: Props) {
         onOverrideChange={handlePositionOverride}
         overrideSaving={overrideSaving}
       />
+
+      {/* Training progress */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+            Training progress
+          </h3>
+          <TrainingProgramSelect value={programId} onChange={setProgramId} />
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <DumbbellRow
+            fullWeeks={player.trainingFullWeeks ?? 0}
+            partialFraction={player.trainingPartial ?? 0}
+            totalUnits={player.trainingUnits}
+            programLabel={programLabel}
+          />
+          <div className="text-sm text-gray-600 space-y-1">
+            <p>
+              Last match:{" "}
+              <span className="font-medium text-gray-800">
+                {lastMatchRoleLabel(player.lastMatchPositionCode)}
+                {(player.lastMatchPlayedMinutes ?? 0) > 0 &&
+                  `, ${player.lastMatchPlayedMinutes}′`}
+              </span>
+            </p>
+            {player.trainingLastPopAt && (
+              <p className="text-gray-500">
+                Last skill-up:{" "}
+                {new Date(player.trainingLastPopAt).toLocaleDateString()}
+              </p>
+            )}
+          </div>
+        </div>
+        <p className="text-xs text-gray-400 mt-3">
+          Progress counts effective weeks since the last increase in a skill trained
+          by this program. Partial weeks use a faded dumbbell.
+        </p>
+      </div>
 
       {/* Change history */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

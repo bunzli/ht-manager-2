@@ -49,16 +49,23 @@ async function patchJson<T>(path: string, body: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function fetchPlayers(): Promise<PlayersResponse> {
-  return fetchJson<PlayersResponse>("/players");
+export function fetchPlayers(trainingTypeId?: number): Promise<PlayersResponse> {
+  const q =
+    trainingTypeId != null ? `?trainingTypeId=${trainingTypeId}` : "";
+  return fetchJson<PlayersResponse>(`/players${q}`);
 }
 
 export function refreshPlayers(): Promise<PlayersResponse> {
   return postJson<PlayersResponse>("/players/refresh", {});
 }
 
-export function fetchPlayer(playerId: number): Promise<PlayerDetailResponse> {
-  return fetchJson<PlayerDetailResponse>(`/players/${playerId}`);
+export function fetchPlayer(
+  playerId: number,
+  trainingTypeId?: number,
+): Promise<PlayerDetailResponse> {
+  const q =
+    trainingTypeId != null ? `?trainingTypeId=${trainingTypeId}` : "";
+  return fetchJson<PlayerDetailResponse>(`/players/${playerId}${q}`);
 }
 
 export async function setPositionOverride(

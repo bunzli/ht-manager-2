@@ -1,5 +1,15 @@
 export const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
+/** HT training week starts Thursday 00:00 UTC. */
+export function getHtWeekStart(date: Date): Date {
+  const d = new Date(date);
+  d.setUTCHours(0, 0, 0, 0);
+  const day = d.getUTCDay();
+  const daysSinceThursday = (day + 3) % 7;
+  d.setUTCDate(d.getUTCDate() - daysSinceThursday);
+  return d;
+}
+
 export const TRANSFER_STATUS = {
   LISTED: "listed",
   ENDED: "ended",

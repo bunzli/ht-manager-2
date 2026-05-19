@@ -10,6 +10,7 @@ import { createChppClient } from "./chpp/client";
 import { createPlayersRouter } from "./routes/players";
 import { createMarketStudiesRouter } from "./routes/marketStudies";
 import { createPriceModelRouter } from "./routes/priceModel";
+import { createTrainingRouter } from "./routes/training";
 import { startScheduler } from "./jobs/scheduler";
 import { globalErrorHandler } from "./lib/errorMiddleware";
 
@@ -25,6 +26,7 @@ app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/api/players", createPlayersRouter(prisma, chpp));
 app.use("/api/market-studies", createMarketStudiesRouter(prisma, chpp));
 app.use("/api/price-model", createPriceModelRouter(prisma));
+app.use("/api/training", createTrainingRouter(prisma));
 
 app.use(globalErrorHandler);
 

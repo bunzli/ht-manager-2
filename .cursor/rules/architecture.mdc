@@ -22,6 +22,7 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 | `routes/players.ts` | Express router for `/api/players`. Parses params, delegates to `player.service`, returns JSON. |
 | `routes/marketStudies.ts` | Express router for `/api/market-studies`. Parses params, delegates to `marketStudy.service`, returns JSON. |
 | `routes/priceModel.ts` | Express router for `/api/price-model`. Train model, get status, predict prices. Delegates to `pricePredictor.service`. |
+| `routes/training.ts` | Express router for `/api/training`. Programs list, progress since skill-up, team training settings. |
 
 ### Services — business logic
 
@@ -32,6 +33,7 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 | `services/transferResolver.ts` | Matches pending transfer listings to completed transfers and resolves final prices/deadlines. |
 | `services/soldPriceAggregator.ts` | Aggregates sold-player prices into chart-ready series (by age, by specialty). Custom charts use client-side aggregation instead. |
 | `services/pricePredictor.service.ts` | Price prediction orchestration: trains OLS regression model from sold players, predicts prices for squad players, study players, or arbitrary skill sets. |
+| `services/training.service.ts` | Training program metadata, weekly match snapshots, progress since last skill-up, CHPP training type sync. |
 
 ### CHPP integration
 
@@ -51,6 +53,9 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 | `lib/errorMiddleware.ts` | Global Express error handler — catches unhandled exceptions and returns a uniform error response. |
 | `lib/positionRatings.ts` | HT position-skill weight coefficients; computes a 0–20 rating per position for a player. |
 | `lib/regression.ts` | Pure-math OLS multivariate linear regression: feature extraction, training (normal equation), prediction. Used by `pricePredictor.service`. |
+| `lib/trainingPrograms.ts` | HT training type definitions, position rates (full/half), week-unit calculation. |
+| `lib/matchRoleMapping.ts` | Maps CHPP `MatchRoleID` to training position buckets. |
+| `lib/trainingProgress.ts` | Sums effective training weeks since last skill pop per program. |
 
 ### Jobs
 
@@ -79,6 +84,7 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 | `pages/MarketStudyInfoPage.tsx` | Single study: editable name/search params, summary metrics, CHPP refresh and remove non-sold; link to Analytics. |
 | `pages/MarketAnalyticsPage.tsx` | Multi-study analytics: filters, sold-only charts (age double-bar, specialty, skill), results table with status filter (default listed). |
 | `pages/PriceModelPage.tsx` | Price prediction model management: view status, train/retrain the model. |
+| `pages/TrainingPage.tsx` | Squad training view: program selector, dumbbell progress table, last-match minutes. |
 
 ### Hooks
 
@@ -87,6 +93,7 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 | `hooks/useMarketStudy.ts` | `useMarketStudyData` — fetches a study, `reload()` refetch, action handlers. `useStudyFilters` — filter/sort state for the results table. |
 | `hooks/useAnalyticsData.ts` | `useAnalyticsStudyQueries` — loads study list + parallel study details and merged predictions for the analytics page. |
 | `hooks/usePriceModel.ts` | React Query hooks for price model: `usePriceModelStatus` (status + train mutation), `usePlayerPrediction`, `useStudyPredictions`. |
+| `hooks/useTraining.ts` | Training program selection (localStorage + API), progress query. |
 
 ### Components — market study
 
@@ -103,6 +110,9 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 | `components/market-study/CustomChartBuilder.tsx` | Form for adding a user-defined custom chart (group-by dimension + optional filters). |
 | `components/market-study/CustomChart.tsx` | Renders a single custom bar chart; aggregates sold-player data client-side via `chartAggregator`. |
 | `components/market-study/StudyResultsTable.tsx` | Sortable table of transfer results with row selection; optional `skipFilters`, `showStudyColumn`. |
+| `components/training/DumbbellRow.tsx` | Dumbbell icons for full/partial training weeks since last skill-up. |
+| `components/training/DumbbellIcon.tsx` | SVG dumbbell glyph with configurable opacity. |
+| `components/training/TrainingProgramSelect.tsx` | Dropdown to switch HT training program (what-if comparison). |
 
 ### Components — shared / domain
 
@@ -140,6 +150,9 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 | `lib/chartAggregator.ts` | Client-side aggregation for custom charts: filters sold players, groups by a chosen dimension, computes avg price per bucket. |
 | `lib/analyticsFilters.ts` | Analytics filter model, sold/table filter helpers, bounds helper, `ANALYTICS_SKILL_STORAGE_KEY`. |
 | `lib/priceModelApi.ts` | Typed API client for `/api/price-model` endpoints: train, status, predict for player/study/skills. |
+| `lib/trainingPrograms.ts` | Client-side training program labels and localStorage key for selected type. |
+| `lib/trainingApi.ts` | Typed API client for `/api/training` endpoints. |
+| `lib/matchRoleMapping.ts` | Client mirror: last-match role label from `MatchRoleID`. |
 
 ### Storybook & test data
 

@@ -52,6 +52,16 @@ export interface ChppPlayer {
     TrainerSkill: number;
     TrainerSkillLevel: number;
   };
+  LastMatch?: {
+    Date: string;
+    MatchId: number;
+    PositionCode: number;
+    PlayedMinutes: number;
+  };
+}
+
+export interface ChppTrainingResponse {
+  TrainingType: number;
 }
 
 export interface ChppPlayersResponse {

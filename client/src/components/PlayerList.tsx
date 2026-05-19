@@ -5,6 +5,7 @@ import type { Player } from "../lib/types";
 interface PlayerListProps {
   players: Player[];
   onPlayerClick?: (playerId: number) => void;
+  trainingProgramLabel?: string;
 }
 
 function getBestPositionId(player: Player): string {
@@ -19,7 +20,11 @@ function getBestPositionId(player: Player): string {
   );
 }
 
-export function PlayerList({ players, onPlayerClick }: PlayerListProps) {
+export function PlayerList({
+  players,
+  onPlayerClick,
+  trainingProgramLabel,
+}: PlayerListProps) {
   if (players.length === 0) {
     return (
       <p className="text-gray-500 text-center py-12">No players found.</p>
@@ -55,6 +60,7 @@ export function PlayerList({ players, onPlayerClick }: PlayerListProps) {
               <PlayerCard
                 key={p.playerId}
                 player={p}
+                trainingProgramLabel={trainingProgramLabel}
                 onClick={onPlayerClick ? () => onPlayerClick(p.playerId) : undefined}
               />
             ))}

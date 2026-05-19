@@ -66,6 +66,10 @@ model PlayerDetails {
   avatarBackground String @default("")
   avatarLayers     String @default("[]")
 
+  lastMatchDate            String?
+  lastMatchPositionCode    Int?
+  lastMatchPlayedMinutes   Int     @default(0)
+
   tracking        PlayerTracking?  @relation("LatestDetails")
   transferPlayers TransferPlayer[]
 
@@ -84,6 +88,27 @@ model PlayerTracking {
   latestDetails   PlayerDetails? @relation("LatestDetails", fields: [latestDetailsId], references: [id])
 
   @@map("player_tracking")
+}
+
+model PlayerTrainingWeek {
+  id            Int      @id @default(autoincrement())
+  playerId      Int
+  weekStart     DateTime
+  positionCode  Int?
+  playedMinutes Int      @default(0)
+  updatedAt     DateTime @updatedAt
+
+  @@unique([playerId, weekStart])
+  @@index([playerId])
+  @@map("player_training_week")
+}
+
+model TeamSettings {
+  id             Int      @id @default(1)
+  trainingTypeId Int?
+  updatedAt      DateTime @updatedAt
+
+  @@map("team_settings")
 }
 
 model PlayerChange {

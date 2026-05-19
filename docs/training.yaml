@@ -1,0 +1,16 @@
+endpoint:
+  file: training
+
+request:
+  version: 1.0
+  teamID: integer   # optional (default: logged user's team)
+
+response:
+  HattrickData:
+    Team:
+      TeamID: integer
+      TeamName: string
+      TrainingType: trainingType   # see docs/types.yaml
+
+notes:
+  - Used to read the team's current training program for default UI selection
