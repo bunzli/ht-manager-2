@@ -84,3 +84,32 @@ export const POSITION_RATINGS: PositionRating[] = [
     },
   },
 ];
+
+export function getAutoBestPositionId(
+  positionScores: Record<string, number>,
+): string {
+  return POSITION_RATINGS.reduce(
+    (bestId, pos) =>
+      (positionScores[pos.id] ?? 0) > (positionScores[bestId] ?? 0)
+        ? pos.id
+        : bestId,
+    POSITION_RATINGS[0].id,
+  );
+}
+
+/** Squad position: manual override, or highest-rated position. */
+export function getEffectivePositionId(player: {
+  positionOverride: string | null;
+  positionScores: Record<string, number>;
+}): string {
+  return player.positionOverride ?? getAutoBestPositionId(player.positionScores);
+}
+
+export function getEffectivePosition(player: {
+  positionOverride: string | null;
+  positionScores: Record<string, number>;
+}): { pos: PositionRating; score: number } {
+  const id = getEffectivePositionId(player);
+  const pos = POSITION_RATINGS.find((p) => p.id === id) ?? POSITION_RATINGS[0];
+  return { pos, score: player.positionScores[id] ?? 0 };
+}

@@ -1,4 +1,8 @@
-import { POSITION_RATINGS, type PositionSkillKey } from "../lib/positionRatings";
+import {
+  getAutoBestPositionId,
+  POSITION_RATINGS,
+  type PositionSkillKey,
+} from "../lib/positionRatings";
 import { skillLabel, skillColor } from "../lib/skills";
 import type { Player } from "../lib/types";
 
@@ -27,9 +31,7 @@ export function PositionRatingsCard({
     score: player.positionScores[pos.id] ?? 0,
   })).sort((a, b) => b.score - a.score);
 
-  // Best by score (ignoring override, used to label the auto-detected position)
-  const autoBestId = scores[0]?.pos.id;
-  // Effective position used for squad grouping
+  const autoBestId = getAutoBestPositionId(player.positionScores);
   const effectiveId = player.positionOverride ?? autoBestId;
 
   return (

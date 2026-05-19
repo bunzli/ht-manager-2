@@ -2,7 +2,7 @@ import { SkillBar } from "./SkillBar";
 import { PlayerAvatarFromJson } from "./PlayerAvatar";
 import { specialtyLabel, specialtyIcon, skillColor, skillLabel, SKILL_KEYS } from "../lib/skills";
 import { formatNumber, formatMoney } from "../lib/format";
-import { POSITION_RATINGS } from "../lib/positionRatings";
+import { getEffectivePosition } from "../lib/positionRatings";
 import { displayName, hattrickPlayerUrl } from "../lib/playerUtils";
 import { DumbbellRow } from "./training/DumbbellRow";
 import type { Player, PlayerChange } from "../lib/types";
@@ -64,13 +64,11 @@ export function PlayerCard({
   const ageStr = `${player.age}y ${player.ageDays}d`;
   const name = displayName(player);
 
-  const bestPosition = POSITION_RATINGS.reduce(
-    (best, pos) => {
-      const score = player.positionScores[pos.id] ?? 0;
-      return score > best.score ? { pos, score } : best;
-    },
-    { pos: POSITION_RATINGS[0], score: player.positionScores[POSITION_RATINGS[0].id] ?? 0 },
-  );
+  const effectivePosition = getEffectivePosition(player);
+  const tsiChange = changeMap.get("tsi");
+  const tsiDelta = tsiChange
+    ? Number(tsiChange.newValue) - Number(tsiChange.oldValue)
+    : null;
 
   return (
     <div
@@ -88,14 +86,23 @@ export function PlayerCard({
           />
           <div className="text-xs text-gray-500 space-y-1 w-full">
             {[
-              { label: "Form", value: player.playerForm, max: 8 },
-              { label: "Stamina", value: player.staminaSkill, max: 8 },
-            ].map(({ label, value, max }) => {
+              { label: "Form", key: "playerForm", value: player.playerForm, max: 8 },
+              {
+                label: "Stamina",
+                key: "staminaSkill",
+                value: player.staminaSkill,
+                max: 8,
+              },
+            ].map(({ label, key, value, max }) => {
+              const change = changeMap.get(key);
+              const delta = change
+                ? Number(change.newValue) - Number(change.oldValue)
+                : null;
               const pct = Math.min((value / max) * 100, 100);
               const color = skillColor(value, max);
               const levelLabel = skillLabel(value);
               return (
-                <div key={label} className="flex items-center gap-1.5">
+                <div key={label} className="relative flex items-center gap-1.5">
                   <span className="text-gray-400 shrink-0 w-11">{label}</span>
                   <div className="flex-1 bg-gray-200 rounded-full h-4 relative overflow-hidden">
                     <span className="absolute inset-0 flex items-center px-2 text-[10px] text-gray-500 pointer-events-none select-none whitespace-nowrap">
@@ -113,6 +120,15 @@ export function PlayerCard({
                       </span>
                     </div>
                   </div>
+                  {delta !== null && delta !== 0 && (
+                    <span
+                      className={`absolute left-full ml-1 top-1/2 -translate-y-1/2 text-[10px] font-bold tabular-nums whitespace-nowrap ${
+                        delta > 0 ? "text-green-600" : "text-red-500"
+                      }`}
+                    >
+                      {delta > 0 ? `+${delta}` : delta}
+                    </span>
+                  )}
                 </div>
               );
             })}
@@ -168,15 +184,26 @@ export function PlayerCard({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 mb-2 text-xs text-gray-500">
+          <div className="flex flex-wrap items-baseline gap-1.5 mb-2 text-xs text-gray-500">
             <span>{ageStr}</span>
             <span className="text-gray-300">|</span>
-            <span>TSI {formatNumber(player.tsi)}</span>
+            <span className="inline-flex flex-col items-end leading-none">
+              <span>TSI {formatNumber(player.tsi)}</span>
+              {tsiDelta !== null && tsiDelta !== 0 && (
+                <span
+                  className={`mt-0.5 text-[8px] font-medium tabular-nums ${
+                    tsiDelta > 0 ? "text-green-600" : "text-red-500"
+                  }`}
+                >
+                  {tsiDelta > 0 ? `+${formatNumber(tsiDelta)}` : formatNumber(tsiDelta)}
+                </span>
+              )}
+            </span>
             <span className="text-gray-300">|</span>
             <span className="font-medium text-gray-600">
-              {bestPosition.pos.shortLabel}:{" "}
+              {effectivePosition.pos.shortLabel}:{" "}
               <span className="text-gray-800">
-                {(Math.round(bestPosition.score * 10) / 10).toFixed(1)}
+                {(Math.round(effectivePosition.score * 10) / 10).toFixed(1)}
               </span>
             </span>
             {(player.trainingFullWeeks != null ||
@@ -194,18 +221,13 @@ export function PlayerCard({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 mb-2">
-            {player.transferListed && (
+          {player.transferListed && (
+            <div className="mb-2">
               <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
                 Transfer listed
               </span>
-            )}
-            {hasChanges && (
-              <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
-                Changed
-              </span>
-            )}
-          </div>
+            </div>
+          )}
 
           <div className="space-y-1 mt-auto">
             {SKILL_KEYS.filter(({ key }) => key !== "staminaSkill").map(({ key, label }) => (
