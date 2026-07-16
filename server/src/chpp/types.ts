@@ -70,6 +70,40 @@ export interface ChppPlayersResponse {
   Players: ChppPlayer[];
 }
 
+export interface ChppArchivedMatch {
+  MatchID: number;
+  MatchDate: string;
+  MatchType: number;
+  HomeTeamID: number;
+  HomeTeamName: string;
+  AwayTeamID: number;
+  AwayTeamName: string;
+  HomeGoals: number | null;
+  AwayGoals: number | null;
+}
+
+export interface ChppMatchesArchiveResponse {
+  TeamID: number;
+  TeamName: string;
+  Matches: ChppArchivedMatch[];
+}
+
+export interface ChppLineupPlayer {
+  PlayerID: number;
+  PlayerName: string;
+  RoleID: number;
+  PositionCode: number | null;
+  Behaviour: number | null;
+  RatingStars: number | null;
+}
+
+export interface ChppMatchLineupResponse {
+  MatchID: number;
+  TeamID: number;
+  TeamName: string;
+  Players: ChppLineupPlayer[];
+}
+
 export interface ChppPlayerDetails {
   PlayerID: number;
   FirstName: string;

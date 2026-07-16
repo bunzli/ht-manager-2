@@ -51,7 +51,9 @@ function signedNumber(value: number | null | undefined) {
 }
 
 function topSkills(player: Player) {
-  return SKILL_KEYS.filter((skill) => skill.key !== "staminaSkill")
+  return SKILL_KEYS.filter(
+    (skill) => skill.key !== "staminaSkill" && Number(player[skill.key]) > 5,
+  )
     .sort((a, b) => Number(player[b.key]) - Number(player[a.key]))
     .slice(0, 4);
 }

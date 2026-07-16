@@ -15,6 +15,7 @@ import {
 import { estimateTrainingWeeks } from "../lib/trainingForecast";
 import { calculateTsiVariations } from "../lib/squadMetrics";
 import { predictForPlayerDetails } from "./pricePredictor.service";
+import { syncRecentMatches } from "./match.service";
 
 const SKILL_FIELDS = [
   "staminaSkill",
@@ -252,6 +253,18 @@ export async function refreshPlayersFromChpp(
   const settings = await getTeamSettings(prisma);
   const defaultTrainingTypeId = settings.trainingTypeId ?? 8;
   const now = new Date();
+  const currentPlayerIds = response.Players.map((player) => player.PlayerID);
+
+  // The players endpoint is an authoritative snapshot of the current squad.
+  // Keep historical records, but stop including players who have left the team
+  // in the roster returned by getPlayersFromDb.
+  await prisma.playerTracking.updateMany({
+    where: {
+      isTracking: true,
+      playerId: { notIn: currentPlayerIds },
+    },
+    data: { isTracking: false },
+  });
 
   for (const player of response.Players) {
     const previous = await prisma.playerDetails.findFirst({
@@ -308,6 +321,8 @@ export async function refreshPlayersFromChpp(
     }
 
   }
+
+  await syncRecentMatches(prisma, chpp, response.TeamID || teamId);
 
   const result = await getPlayersFromDb(prisma);
   return { ...result, teamId: response.TeamID, teamName: response.TeamName, fetchedAt: now.toISOString() };
@@ -432,10 +447,37 @@ export async function getPlayerDetail(
       : null,
   }));
 
+  const appearances = await prisma.playerMatchAppearance.findMany({
+    where: { playerId },
+    include: { teamMatch: true },
+    orderBy: { teamMatch: { matchDate: "desc" } },
+    take: 10,
+  });
+  const configuredTeamId = Number(process.env.CHPP_TEAM_ID);
+  const matches = appearances.map((appearance) => {
+    const match = appearance.teamMatch;
+    const isHome = match.homeTeamId === configuredTeamId;
+    return {
+      matchId: match.matchId,
+      matchDate: match.matchDate.toISOString(),
+      matchType: match.matchType,
+      opponentTeamId: isHome ? match.awayTeamId : match.homeTeamId,
+      opponentTeamName: isHome ? match.awayTeamName : match.homeTeamName,
+      isHome,
+      goalsFor: isHome ? match.homeGoals : match.awayGoals,
+      goalsAgainst: isHome ? match.awayGoals : match.homeGoals,
+      roleId: appearance.roleId,
+      positionCode: appearance.positionCode,
+      behaviour: appearance.behaviour,
+      ratingStars: appearance.ratingStars,
+    };
+  });
+
   return {
     player,
     allChanges,
     history,
+    matches,
   };
 }
 

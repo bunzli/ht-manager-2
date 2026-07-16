@@ -107,6 +107,7 @@ export interface PlayerDetailResponse {
   player: Player;
   allChanges: PlayerChange[];
   history: PlayerHistoryPoint[];
+  matches: PlayerMatchAppearance[];
 }
 
 export interface PlayerHistoryPoint {
@@ -114,6 +115,21 @@ export interface PlayerHistoryPoint {
   tsi: number;
   salary: number;
   trainingSkill: number | null;
+}
+
+export interface PlayerMatchAppearance {
+  matchId: number;
+  matchDate: string;
+  matchType: number;
+  opponentTeamId: number;
+  opponentTeamName: string;
+  isHome: boolean;
+  goalsFor: number | null;
+  goalsAgainst: number | null;
+  roleId: number;
+  positionCode: number | null;
+  behaviour: number | null;
+  ratingStars: number | null;
 }
 
 export interface TransferSearchParams {

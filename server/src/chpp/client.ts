@@ -3,6 +3,8 @@ import OAuth from "oauth-1.0a";
 import { XMLParser } from "fast-xml-parser";
 import {
   ChppPlayersResponse,
+  ChppMatchesArchiveResponse,
+  ChppMatchLineupResponse,
   ChppPlayerDetails,
   TransferSearchParams,
   TransferSearchResponse,
@@ -11,6 +13,8 @@ import {
 } from "./types";
 import {
   parsePlayers,
+  parseMatchesArchive,
+  parseMatchLineup,
   parsePlayerDetails,
   parseTransferSearch,
   parsePlayerTransfers,
@@ -105,6 +109,30 @@ export class ChppClient {
       includeMatchInfo: "true",
     });
     return parsePlayers(data);
+  }
+
+  async getMatchesArchive(
+    teamId: number | string,
+  ): Promise<ChppMatchesArchiveResponse> {
+    const data = await this.request({
+      file: "matchesarchive",
+      version: "1.4",
+      teamID: teamId,
+    });
+    return parseMatchesArchive(data);
+  }
+
+  async getMatchLineup(
+    matchId: number | string,
+    teamId: number | string,
+  ): Promise<ChppMatchLineupResponse> {
+    const data = await this.request({
+      file: "matchlineup",
+      version: "2.0",
+      matchID: matchId,
+      teamID: teamId,
+    });
+    return parseMatchLineup(data);
   }
 
   async getTraining(teamId: number | string): Promise<{ TrainingType: number }> {

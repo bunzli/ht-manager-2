@@ -1,6 +1,10 @@
 import {
   ChppPlayer,
   ChppPlayersResponse,
+  ChppMatchesArchiveResponse,
+  ChppArchivedMatch,
+  ChppMatchLineupResponse,
+  ChppLineupPlayer,
   ChppPlayerDetails,
   TransferSearchResponse,
   TransferSearchResult,
@@ -67,6 +71,18 @@ function toBool(val: unknown): boolean {
 function toInt(val: unknown, fallback = 0): number {
   const n = Number(val);
   return Number.isNaN(n) ? fallback : Math.floor(n);
+}
+
+function toFloatOrNull(val: unknown): number | null {
+  if (val === undefined || val === null || val === "") return null;
+  const n = Number(val);
+  return Number.isNaN(n) ? null : n;
+}
+
+function toIntOrNull(val: unknown): number | null {
+  if (val === undefined || val === null || val === "") return null;
+  const n = Number(val);
+  return Number.isNaN(n) ? null : Math.floor(n);
 }
 
 function ensureArray<T>(val: T | T[] | undefined): T[] {
@@ -173,6 +189,66 @@ export function parsePlayers(data: Record<string, unknown>): ChppPlayersResponse
     TeamID: toInt(team.TeamID),
     TeamName: String(team.TeamName ?? ""),
     Players: rawPlayers.map(parsePlayer),
+  };
+}
+
+function parseArchivedMatch(match: Record<string, unknown>): ChppArchivedMatch {
+  const homeTeam = (match.HomeTeam ?? {}) as Record<string, unknown>;
+  const awayTeam = (match.AwayTeam ?? {}) as Record<string, unknown>;
+  return {
+    MatchID: toInt(match.MatchID),
+    MatchDate: stockholmToUtcIso(String(match.MatchDate ?? "")),
+    MatchType: toInt(match.MatchType),
+    HomeTeamID: toInt(homeTeam.HomeTeamID ?? homeTeam.TeamID),
+    HomeTeamName: String(homeTeam.HomeTeamName ?? homeTeam.TeamName ?? ""),
+    AwayTeamID: toInt(awayTeam.AwayTeamID ?? awayTeam.TeamID),
+    AwayTeamName: String(awayTeam.AwayTeamName ?? awayTeam.TeamName ?? ""),
+    HomeGoals: toIntOrNull(match.HomeGoals),
+    AwayGoals: toIntOrNull(match.AwayGoals),
+  };
+}
+
+export function parseMatchesArchive(
+  data: Record<string, unknown>,
+): ChppMatchesArchiveResponse {
+  const hd = data.HattrickData as Record<string, unknown>;
+  const team = (hd.Team ?? {}) as Record<string, unknown>;
+  const matchList = (team.MatchList ?? {}) as Record<string, unknown>;
+  const rawMatches = ensureArray(
+    matchList.Match as Record<string, unknown>[] | Record<string, unknown>,
+  );
+  return {
+    TeamID: toInt(team.TeamID),
+    TeamName: String(team.TeamName ?? ""),
+    Matches: rawMatches.map(parseArchivedMatch),
+  };
+}
+
+function parseLineupPlayer(player: Record<string, unknown>): ChppLineupPlayer {
+  return {
+    PlayerID: toInt(player.PlayerID),
+    PlayerName: String(player.PlayerName ?? ""),
+    RoleID: toInt(player.RoleID),
+    PositionCode: toIntOrNull(player.PositionCode),
+    Behaviour: toIntOrNull(player.Behaviour),
+    RatingStars: toFloatOrNull(player.RatingStars),
+  };
+}
+
+export function parseMatchLineup(
+  data: Record<string, unknown>,
+): ChppMatchLineupResponse {
+  const hd = data.HattrickData as Record<string, unknown>;
+  const team = (hd.Team ?? {}) as Record<string, unknown>;
+  const lineup = (team.Lineup ?? {}) as Record<string, unknown>;
+  const rawPlayers = ensureArray(
+    lineup.Player as Record<string, unknown>[] | Record<string, unknown>,
+  );
+  return {
+    MatchID: toInt(hd.MatchID),
+    TeamID: toInt(team.TeamID),
+    TeamName: String(team.TeamName ?? ""),
+    Players: rawPlayers.map(parseLineupPlayer),
   };
 }
 

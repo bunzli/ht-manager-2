@@ -128,6 +128,41 @@ model PlayerChange {
   @@map("player_change")
 }
 
+model TeamMatch {
+  id               Int       @id @default(autoincrement())
+  matchId          Int       @unique
+  matchDate        DateTime
+  matchType        Int
+  homeTeamId       Int
+  homeTeamName     String
+  awayTeamId       Int
+  awayTeamName     String
+  homeGoals        Int?
+  awayGoals        Int?
+  lineupFetchedAt  DateTime?
+
+  appearances PlayerMatchAppearance[]
+
+  @@index([matchDate])
+  @@map("team_match")
+}
+
+model PlayerMatchAppearance {
+  id           Int       @id @default(autoincrement())
+  teamMatchId  Int
+  teamMatch    TeamMatch @relation(fields: [teamMatchId], references: [id], onDelete: Cascade)
+  playerId     Int
+  roleId       Int
+  positionCode Int?
+  behaviour    Int?
+  ratingStars  Float?
+
+  @@unique([playerId, teamMatchId])
+  @@index([playerId])
+  @@index([teamMatchId])
+  @@map("player_match_appearance")
+}
+
 model MarketStudy {
   id           Int      @id @default(autoincrement())
   name         String
