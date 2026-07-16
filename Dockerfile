@@ -14,7 +14,7 @@ RUN npx prisma generate --schema prisma/postgres/schema.prisma
 RUN npx tsc
 
 FROM node:20-alpine
-RUN apk add --no-cache curl postgresql-client sqlite
+RUN apk add --no-cache curl
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
 
@@ -22,12 +22,10 @@ COPY --from=server-build /app/server/package.json /app/server/package-lock.json 
 COPY --from=server-build /app/server/node_modules ./server/node_modules
 COPY --from=server-build /app/server/dist ./server/dist
 COPY --from=server-build /app/server/prisma ./server/prisma
-COPY scripts/migrate-sqlite-to-postgres.sh /usr/local/bin/migrate-sqlite-to-postgres
-COPY scripts/verify-sqlite-postgres-export.mjs /usr/local/bin/verify-sqlite-postgres-export.mjs
 
 COPY --from=client-build /app/client/dist ./client/dist
 
-RUN chmod 0555 /usr/local/bin/migrate-sqlite-to-postgres && chown -R appuser:appgroup /app
+RUN chown -R appuser:appgroup /app
 
 WORKDIR /app/server
 
