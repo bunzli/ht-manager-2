@@ -72,7 +72,7 @@ function fillMonthlyTrainingGaps(data: ChartHistoryPoint[]) {
 
   for (const point of data) {
     const pointDate = new Date(point.at);
-    const normalizedPoint = {
+    const normalizedPoint: ChartHistoryPoint = {
       ...point,
       trainingSkill: point.trainingSkill ?? lastKnownSkill,
     };
@@ -107,7 +107,7 @@ function fillMonthlyTrainingGaps(data: ChartHistoryPoint[]) {
   return filled;
 }
 
-function monthlyChartTicks(data: Array<Record<string, number | string | null>>) {
+function monthlyChartTicks(data: Array<{ timestamp: number }>) {
   const timestamps = data
     .map((point) => Number(point.timestamp))
     .filter(Number.isFinite)
@@ -130,7 +130,7 @@ function monthlyChartTicks(data: Array<Record<string, number | string | null>>) 
   return ticks;
 }
 
-function Chart({ title, dataKey, color, data }: { title: string; dataKey: "tsi" | "salary" | "trainingSkill"; color: string; data: Array<Record<string, number | string | null>> }) {
+function Chart({ title, dataKey, color, data }: { title: string; dataKey: "tsi" | "salary" | "trainingSkill"; color: string; data: ChartHistoryPoint[] }) {
   const ticks = monthlyChartTicks(data);
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4">
