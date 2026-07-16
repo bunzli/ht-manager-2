@@ -120,9 +120,9 @@ export function PlayerCard({ player, positionRank, selected, onClick }: PlayerCa
         <ConditionBar label="Form" value={player.playerForm} color="bg-violet-500" />
       </div>
 
-      <div className="col-span-2 flex gap-1.5 xl:col-span-1">
+      <div className="col-span-2 grid grid-cols-4 gap-1.5 xl:col-span-1">
         {topSkills(player).map((skill) => (
-          <span key={skill.key} title={skill.label} className={`flex min-w-10 flex-1 flex-col items-center rounded-md px-1.5 py-1.5 text-center ring-1 ${SKILL_STYLES[skill.key] ?? "bg-slate-50 text-slate-700 ring-slate-200"}`}>
+          <span key={skill.key} title={skill.label} className={`flex min-w-0 flex-col items-center rounded-md px-1.5 py-1.5 text-center ring-1 ${SKILL_STYLES[skill.key] ?? "bg-slate-50 text-slate-700 ring-slate-200"}`}>
             <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">{SKILL_SHORT[skill.key] ?? skill.label.slice(0, 2)}</span>
             <strong className="mt-0.5 text-sm leading-none tabular-nums">{player[skill.key]}</strong>
           </span>

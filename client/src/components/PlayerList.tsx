@@ -5,6 +5,7 @@ import type { Player } from "../lib/types";
 
 export type PlayerSortKey =
   | "position"
+  | "age"
   | "tsi"
   | "wage"
   | "shirtNumber"
@@ -14,6 +15,7 @@ export type PlayerSortKey =
 
 const SORT_OPTIONS: { value: PlayerSortKey; label: string }[] = [
   { value: "position", label: "Position · rating" },
+  { value: "age", label: "Age · old to young" },
   { value: "tsi", label: "TSI · high to low" },
   { value: "wage", label: "Wage · high to low" },
   { value: "shirtNumber", label: "Shirt number · low to high" },
@@ -75,6 +77,9 @@ export function PlayerList({
     if (sortKey === "position") {
       comparison = (positionOrder.get(getEffectivePositionId(a)) ?? 0) - (positionOrder.get(getEffectivePositionId(b)) ?? 0);
       if (comparison === 0) comparison = compareDescending(effectiveRating(a), effectiveRating(b));
+    } else if (sortKey === "age") {
+      comparison = compareDescending(a.age, b.age);
+      if (comparison === 0) comparison = compareDescending(a.ageDays, b.ageDays);
     } else if (sortKey === "tsi") comparison = compareDescending(a.tsi, b.tsi);
     else if (sortKey === "wage") comparison = compareDescending(a.salary, b.salary);
     else if (sortKey === "shirtNumber") comparison = compareAscending(a.playerNumber > 0 ? a.playerNumber : null, b.playerNumber > 0 ? b.playerNumber : null);
