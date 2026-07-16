@@ -132,6 +132,25 @@ export async function predictForPlayer(
   return { playerId, predictedPrice };
 }
 
+/** Returns no entries when a model has not yet been trained. */
+export async function predictForPlayerDetails(
+  prisma: PrismaClient,
+  players: Array<{ playerId: number; details: PlayerFeatureSource }>,
+): Promise<Map<number, number>> {
+  const model = await prisma.priceModel.findFirst({
+    orderBy: { trainedAt: "desc" },
+  });
+  if (!model) return new Map();
+
+  const coefficients = JSON.parse(model.coefficients) as number[];
+  return new Map(
+    players.map(({ playerId, details }) => [
+      playerId,
+      predict(coefficients, extractFeatures(details)),
+    ]),
+  );
+}
+
 export async function predictForStudyPlayers(
   prisma: PrismaClient,
   studyId: number,

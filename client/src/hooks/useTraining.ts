@@ -31,7 +31,7 @@ export function useTrainingProgramId() {
     (id: number) => {
       setProgramIdState(id);
       setStoredTrainingTypeId(id);
-      void updateTrainingSettings(id).then(() => {
+      void updateTrainingSettings({ trainingTypeId: id }).then(() => {
         queryClient.invalidateQueries({ queryKey: ["training", "settings"] });
         queryClient.invalidateQueries({ queryKey: ["players"] });
         queryClient.invalidateQueries({ queryKey: ["training", "progress"] });

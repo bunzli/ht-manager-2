@@ -8,32 +8,20 @@ import {
   Link,
 } from "react-router-dom";
 import { PlayersPage } from "./pages/PlayersPage";
-import { PlayerDetailPage } from "./pages/PlayerDetailPage";
 import { MarketStudiesPage } from "./pages/MarketStudiesPage";
 import { MarketStudyInfoPage } from "./pages/MarketStudyInfoPage";
 import { MarketAnalyticsPage } from "./pages/MarketAnalyticsPage";
 import { PriceModelPage } from "./pages/PriceModelPage";
-import { TrainingPage } from "./pages/TrainingPage";
+import { ConfigPage } from "./pages/ConfigPage";
 
-type Tab = "squad" | "training" | "market" | "price-model";
+type Tab = "squad" | "market" | "price-model" | "config";
 
 const TABS: { id: Tab; label: string; path: string }[] = [
-  { id: "squad", label: "My Squad", path: "/squad" },
-  { id: "training", label: "Training", path: "/training" },
+  { id: "squad", label: "Squad", path: "/squad" },
   { id: "market", label: "Market Studies", path: "/market" },
   { id: "price-model", label: "Price Model", path: "/price-model" },
+  { id: "config", label: "Config", path: "/config" },
 ];
-
-function SquadDetailRoute() {
-  const { playerId } = useParams<{ playerId: string }>();
-  const navigate = useNavigate();
-  return (
-    <PlayerDetailPage
-      playerId={Number(playerId)}
-      onBack={() => navigate("/squad")}
-    />
-  );
-}
 
 function MarketStudyRoute() {
   const { studyId } = useParams<{ studyId: string }>();
@@ -52,31 +40,31 @@ export default function App() {
 
   const activeTab: Tab = pathname.startsWith("/market")
     ? "market"
-    : pathname.startsWith("/price-model")
-      ? "price-model"
-      : pathname.startsWith("/training")
-        ? "training"
+      : pathname.startsWith("/price-model")
+        ? "price-model"
+      : pathname.startsWith("/config")
+        ? "config"
         : "squad";
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-14">
+    <div className="min-h-screen bg-[#f5f7fb] text-slate-900">
+      <header className="border-b border-indigo-100 bg-white/90 px-4 backdrop-blur sm:px-6">
+        <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-2 py-2">
           <Link
             to="/squad"
-            className="text-xl font-bold text-gray-900 no-underline"
+            className="text-lg font-bold tracking-tight text-slate-950 no-underline sm:text-xl"
           >
             HT Manager
           </Link>
-          <nav className="flex gap-1">
+          <nav className="flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => navigate(tab.path)}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
                   activeTab === tab.id
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    ? "bg-white text-indigo-700 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 {tab.label}
@@ -85,26 +73,11 @@ export default function App() {
           </nav>
         </div>
       </header>
-      <main className="px-4 py-6 sm:px-6 max-w-7xl mx-auto">
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
         <Routes>
           <Route path="/" element={<Navigate to="/squad" replace />} />
-          <Route
-            path="/squad"
-            element={
-              <PlayersPage
-                onPlayerClick={(id) => navigate(`/squad/${id}`)}
-              />
-            }
-          />
-          <Route path="/squad/:playerId" element={<SquadDetailRoute />} />
-          <Route
-            path="/training"
-            element={
-              <TrainingPage
-                onPlayerClick={(id) => navigate(`/squad/${id}`)}
-              />
-            }
-          />
+          <Route path="/squad" element={<PlayersPage />} />
+          <Route path="/config" element={<ConfigPage />} />
           <Route path="/market/analytics" element={<MarketAnalyticsPage />} />
           <Route
             path="/market"

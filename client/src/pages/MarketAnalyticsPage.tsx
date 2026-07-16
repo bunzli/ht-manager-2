@@ -24,6 +24,9 @@ import {
   updateTransferPlayers,
 } from "../lib/api";
 import { INITIAL_FILTERS } from "../hooks/useMarketStudy";
+import { Drawer } from "@base-ui/react/drawer";
+import { displayName } from "../lib/playerUtils";
+import { formatMoney, formatNumber } from "../lib/format";
 
 export function MarketAnalyticsPage() {
   const queryClient = useQueryClient();
@@ -36,6 +39,7 @@ export function MarketAnalyticsPage() {
   const [updatingSelected, setUpdatingSelected] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deletingUnsold, setDeletingUnsold] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const boundsInitialized = useRef(false);
   const urlInitDone = useRef(false);
 
@@ -243,13 +247,24 @@ export function MarketAnalyticsPage() {
         <p className="text-gray-500">No market studies yet.</p>
       ) : (
         <>
-          <AnalyticsFilters
-            studies={studyList}
-            filters={filters}
-            onChange={setFilters}
-            ageBounds={bounds.age}
-            priceBounds={bounds.price}
-          />
+          <div className="hidden md:block">
+            <AnalyticsFilters studies={studyList} filters={filters} onChange={setFilters} ageBounds={bounds.age} priceBounds={bounds.price} />
+          </div>
+          <Drawer.Root open={filtersOpen} onOpenChange={setFiltersOpen} swipeDirection="down">
+            <Drawer.Trigger className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-700 shadow-sm md:hidden">
+              Filters · {filters.studyIds === "all" ? "all studies" : `${filters.studyIds.length} studies`}
+            </Drawer.Trigger>
+            <Drawer.Portal>
+              <Drawer.Backdrop className="fixed inset-0 z-40 bg-slate-950/40" />
+              <Drawer.Viewport className="fixed inset-0 z-50 flex items-end">
+                <Drawer.Popup className="max-h-[88vh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl">
+                  <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-slate-300" />
+                  <div className="mb-4 flex items-center justify-between"><Drawer.Title className="text-lg font-bold text-slate-950">Analytics filters</Drawer.Title><Drawer.Close className="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-600">Done</Drawer.Close></div>
+                  <AnalyticsFilters studies={studyList} filters={filters} onChange={setFilters} ageBounds={bounds.age} priceBounds={bounds.price} />
+                </Drawer.Popup>
+              </Drawer.Viewport>
+            </Drawer.Portal>
+          </Drawer.Root>
 
           {actionMsg && <ActionMessage message={actionMsg} />}
           {error && <ActionMessage message={error} variant="error" />}
@@ -267,7 +282,7 @@ export function MarketAnalyticsPage() {
           />
 
           {selectedIds.size > 0 && (
-            <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-2.5">
+            <div className="sticky bottom-3 z-20 flex items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 shadow-lg md:static md:shadow-none">
               <span className="text-sm text-blue-700 font-medium">
                 {selectedIds.size} selected
               </span>
@@ -322,17 +337,17 @@ export function MarketAnalyticsPage() {
                 </select>
               </div>
             </div>
-            <StudyResultsTable
-              players={tablePlayers}
-              filters={INITIAL_FILTERS}
-              skipFilters
-              showStudyColumn={activeStudyIds.length > 1}
-              studyNamesById={studyNamesById}
-              selectedIds={selectedIds}
-              onToggleRow={toggleRow}
-              onToggleAll={toggleAll}
-              predictions={mergedPredictions}
-            />
+            <div className="hidden md:block"><StudyResultsTable players={tablePlayers} filters={INITIAL_FILTERS} skipFilters showStudyColumn={activeStudyIds.length > 1} studyNamesById={studyNamesById} selectedIds={selectedIds} onToggleRow={toggleRow} onToggleAll={toggleAll} predictions={mergedPredictions} /></div>
+            <div className="space-y-2 md:hidden">
+              {tablePlayers.map((player) => {
+                const price = player.status === "listed" ? (player.highestBid || player.askingPrice) : player.finalPrice;
+                return <button type="button" key={player.id} onClick={() => toggleRow(player.id)} className={`w-full rounded-xl border p-3 text-left shadow-sm ${selectedIds.has(player.id) ? "border-indigo-400 bg-indigo-50" : "border-slate-200 bg-white"}`}>
+                  <div className="flex items-start justify-between gap-3"><div><p className="font-semibold text-slate-900">{displayName(player.playerDetails)}</p><p className="mt-0.5 text-xs text-slate-500">{player.playerDetails.age}y · TSI {formatNumber(player.playerDetails.tsi)} · {player.status}</p></div><span className="text-sm font-semibold text-slate-800">{price == null ? "—" : formatMoney(price)}</span></div>
+                  <div className="mt-2 flex gap-3 text-xs text-slate-500"><span>Form {player.playerDetails.playerForm}</span><span>Spec {player.playerDetails.specialty || "—"}</span>{mergedPredictions?.[player.id] != null && <span>Est. {formatMoney(mergedPredictions[player.id])}</span>}</div>
+                </button>;
+              })}
+              {tablePlayers.length === 0 && <p className="rounded-xl bg-white p-6 text-center text-sm text-slate-500">No players match the current filters.</p>}
+            </div>
           </div>
         </>
       )}

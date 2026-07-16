@@ -27,6 +27,7 @@ export interface TrainingWeekRow {
   weekStart: Date;
   positionCode: number | null;
   playedMinutes: number;
+  trainingTypeId?: number | null;
 }
 
 export function weekUnitsForSnapshot(
@@ -100,6 +101,7 @@ export async function getProgressForPlayers(
   playerIds: number[],
   trainingTypeId: number,
   lastMatchByPlayer: Map<number, LastMatchSnapshot>,
+  focusSkillKey?: string,
 ): Promise<PlayerTrainingProgress[]> {
   const program = getTrainingProgram(trainingTypeId);
   if (!program) return [];
@@ -116,14 +118,21 @@ export async function getProgressForPlayers(
       weekStart: row.weekStart,
       positionCode: row.positionCode,
       playedMinutes: row.playedMinutes,
+      trainingTypeId: row.trainingTypeId,
     });
     weeksByPlayer.set(row.playerId, list);
   }
 
   const results: PlayerTrainingProgress[] = [];
   for (const playerId of playerIds) {
-    const lastPopAt = await findLastPopAt(prisma, playerId, program.popSkillKeys);
-    const playerWeeks = weeksByPlayer.get(playerId) ?? [];
+    const lastPopAt = await findLastPopAt(
+      prisma,
+      playerId,
+      focusSkillKey ? [focusSkillKey] : program.popSkillKeys,
+    );
+    const playerWeeks = (weeksByPlayer.get(playerId) ?? []).filter(
+      (week) => week.trainingTypeId == null || week.trainingTypeId === trainingTypeId,
+    );
     const lastMatch = lastMatchByPlayer.get(playerId) ?? {
       date: null,
       positionCode: null,

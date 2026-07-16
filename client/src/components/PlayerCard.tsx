@@ -1,245 +1,141 @@
-import { SkillBar } from "./SkillBar";
-import { PlayerAvatarFromJson } from "./PlayerAvatar";
-import { specialtyLabel, specialtyIcon, skillColor, skillLabel, SKILL_KEYS } from "../lib/skills";
-import { formatNumber, formatMoney } from "../lib/format";
+import { specialtyIcon, specialtyLabel, SKILL_KEYS } from "../lib/skills";
+import { formatMoney, formatNumber } from "../lib/format";
 import { getEffectivePosition } from "../lib/positionRatings";
 import { displayName, hattrickPlayerUrl } from "../lib/playerUtils";
-import { DumbbellRow } from "./training/DumbbellRow";
-import type { Player, PlayerChange } from "../lib/types";
+import type { Player } from "../lib/types";
 
 interface PlayerCardProps {
   player: Player;
+  positionRank: number;
+  selected?: boolean;
   onClick?: () => void;
-  trainingProgramLabel?: string;
 }
 
-function InjuryIcon({ level }: { level: number }) {
-  if (level === -1) return null;
-  const label = level === 0 ? "Bruised" : `Injured (${level}w)`;
+const POSITION_STYLES: Record<string, { badge: string; soft: string }> = {
+  goalkeeper: { badge: "bg-amber-500 text-amber-950", soft: "bg-amber-50 text-amber-800 ring-amber-200" },
+  centralDefender: { badge: "bg-blue-700 text-white", soft: "bg-blue-50 text-blue-800 ring-blue-200" },
+  wingBack: { badge: "bg-cyan-600 text-white", soft: "bg-cyan-50 text-cyan-800 ring-cyan-200" },
+  innerMidfielder: { badge: "bg-violet-700 text-white", soft: "bg-violet-50 text-violet-800 ring-violet-200" },
+  winger: { badge: "bg-teal-600 text-white", soft: "bg-teal-50 text-teal-800 ring-teal-200" },
+  forward: { badge: "bg-orange-600 text-white", soft: "bg-orange-50 text-orange-800 ring-orange-200" },
+};
+
+const SKILL_STYLES: Record<string, string> = {
+  keeperSkill: POSITION_STYLES.goalkeeper.soft,
+  defenderSkill: POSITION_STYLES.centralDefender.soft,
+  playmakerSkill: POSITION_STYLES.innerMidfielder.soft,
+  wingerSkill: POSITION_STYLES.winger.soft,
+  scorerSkill: POSITION_STYLES.forward.soft,
+  passingSkill: POSITION_STYLES.wingBack.soft,
+  setPiecesSkill: "bg-fuchsia-50 text-fuchsia-800 ring-fuchsia-200",
+};
+
+const SKILL_SHORT: Record<string, string> = {
+  keeperSkill: "Ke",
+  defenderSkill: "De",
+  playmakerSkill: "Pl",
+  wingerSkill: "Wi",
+  scorerSkill: "Sc",
+  passingSkill: "Pa",
+  setPiecesSkill: "SP",
+};
+
+function percent(value: number | null | undefined) {
+  if (value == null) return "—";
+  return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
+}
+
+function signedNumber(value: number | null | undefined) {
+  if (value == null) return "—";
+  return `${value > 0 ? "+" : value < 0 ? "−" : ""}${formatNumber(Math.abs(value))}`;
+}
+
+function topSkills(player: Player) {
+  return SKILL_KEYS.filter((skill) => skill.key !== "staminaSkill")
+    .sort((a, b) => Number(player[b.key]) - Number(player[a.key]))
+    .slice(0, 4);
+}
+
+function ConditionBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <span title={label} className="text-base leading-none" aria-label={label}>
-      🩹
-    </span>
+    <div className="grid grid-cols-[46px_minmax(58px,1fr)_16px] items-center gap-1.5">
+      <span className="text-[10px] font-medium text-slate-500">{label}</span>
+      <span className="h-2 overflow-hidden rounded-full bg-slate-100">
+        <span className={`block h-full rounded-full ${color}`} style={{ width: `${Math.min(100, (value / 8) * 100)}%` }} />
+      </span>
+      <strong className="text-[10px] tabular-nums text-slate-700">{value}</strong>
+    </div>
   );
 }
 
-function CardsIcon({ cards }: { cards: number }) {
-  if (cards === 0) return null;
-  if (cards === 3) {
-    return (
-      <span
-        title="Red card"
-        aria-label="Red card"
-        className="inline-block w-2.5 h-3.5 rounded-[2px] bg-red-600 shrink-0"
-      />
-    );
-  }
-  return (
-    <span className="inline-flex gap-0.5" title={`${cards} yellow card${cards > 1 ? "s" : ""}`}>
-      {Array.from({ length: cards }).map((_, i) => (
-        <span
-          key={i}
-          className="inline-block w-2.5 h-3.5 rounded-[2px] bg-yellow-400 shrink-0"
-        />
-      ))}
-    </span>
-  );
-}
-
-export function PlayerCard({
-  player,
-  onClick,
-  trainingProgramLabel,
-}: PlayerCardProps) {
-  const specialty = specialtyLabel(player.specialty);
-  const specIcon = specialtyIcon(player.specialty);
-  const hasChanges = player.recentChanges.length > 0;
-  const changeMap = new Map<string, PlayerChange>();
-  for (const c of player.recentChanges) {
-    if (!changeMap.has(c.key)) {
-      changeMap.set(c.key, c);
-    }
-  }
-
-  const ageStr = `${player.age}y ${player.ageDays}d`;
-  const name = displayName(player);
-
-  const effectivePosition = getEffectivePosition(player);
-  const tsiChange = changeMap.get("tsi");
-  const tsiDelta = tsiChange
-    ? Number(tsiChange.newValue) - Number(tsiChange.oldValue)
+export function PlayerCard({ player, positionRank, selected, onClick }: PlayerCardProps) {
+  const position = getEffectivePosition(player);
+  const positionStyle = POSITION_STYLES[position.pos.id] ?? POSITION_STYLES.innerMidfielder;
+  const progress = player.trainingEstimatedWeeks != null
+    ? Math.min(100, ((player.trainingUnits ?? 0) / player.trainingEstimatedWeeks) * 100)
     : null;
+  const specialty = specialtyLabel(player.specialty);
+  const specialtyImage = specialtyIcon(player.specialty);
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-expanded={selected}
       onClick={onClick}
-      className={`bg-white rounded-lg shadow-sm border p-4 ${
-        hasChanges ? "border-blue-300 ring-1 ring-blue-100" : "border-gray-200"
-      } ${onClick ? "cursor-pointer hover:shadow-md hover:border-blue-400 transition-shadow" : ""}`}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick?.();
+        }
+      }}
+      className={`group grid cursor-pointer grid-cols-[76px_minmax(0,1fr)] gap-x-3 gap-y-4 px-4 py-4 outline-none transition sm:px-5 xl:grid-cols-[86px_minmax(190px,1.2fr)_145px_150px_minmax(205px,1fr)_125px_145px] xl:items-center xl:gap-x-4 xl:py-3.5 ${selected ? "bg-indigo-50 shadow-[inset_3px_0_0_#4f46e5]" : "bg-white hover:bg-blue-50/50 focus-visible:bg-indigo-50/70"}`}
     >
-      <div className="flex gap-4">
-        {/* Left column: avatar + player metadata */}
-        <div className="shrink-0 flex flex-col gap-2" style={{ width: 110 }}>
-          <PlayerAvatarFromJson
-            avatarBackground={player.avatarBackground}
-            avatarLayers={player.avatarLayers}
-          />
-          <div className="text-xs text-gray-500 space-y-1 w-full">
-            {[
-              { label: "Form", key: "playerForm", value: player.playerForm, max: 8 },
-              {
-                label: "Stamina",
-                key: "staminaSkill",
-                value: player.staminaSkill,
-                max: 8,
-              },
-            ].map(({ label, key, value, max }) => {
-              const change = changeMap.get(key);
-              const delta = change
-                ? Number(change.newValue) - Number(change.oldValue)
-                : null;
-              const pct = Math.min((value / max) * 100, 100);
-              const color = skillColor(value, max);
-              const levelLabel = skillLabel(value);
-              return (
-                <div key={label} className="relative flex items-center gap-1.5">
-                  <span className="text-gray-400 shrink-0 w-11">{label}</span>
-                  <div className="flex-1 bg-gray-200 rounded-full h-4 relative overflow-hidden">
-                    <span className="absolute inset-0 flex items-center px-2 text-[10px] text-gray-500 pointer-events-none select-none whitespace-nowrap">
-                      {levelLabel}
-                    </span>
-                    <div
-                      className={`absolute inset-y-0 left-0 rounded-full overflow-hidden ${color}`}
-                      style={{ width: `${pct}%` }}
-                    >
-                      <span
-                        className="absolute top-0 left-0 h-full flex items-center px-2 text-[10px] text-white pointer-events-none select-none whitespace-nowrap"
-                        style={{ width: pct > 0 ? `${(100 / pct) * 100}%` : "0" }}
-                      >
-                        {levelLabel}
-                      </span>
-                    </div>
-                  </div>
-                  {delta !== null && delta !== 0 && (
-                    <span
-                      className={`absolute left-full ml-1 top-1/2 -translate-y-1/2 text-[10px] font-bold tabular-nums whitespace-nowrap ${
-                        delta > 0 ? "text-green-600" : "text-red-500"
-                      }`}
-                    >
-                      {delta > 0 ? `+${delta}` : delta}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-            <div className="border-t border-gray-100 pt-1 mt-1 flex justify-between gap-1">
-              <span className="text-gray-400 shrink-0">Wage</span>
-              <span className="text-right">{formatMoney(player.salary)}</span>
-            </div>
-            <div className="flex justify-between gap-1">
-              <span className="text-gray-400 shrink-0">Exp</span>
-              <span className="text-right">{skillLabel(player.experience)}</span>
-            </div>
-            <div className="flex justify-between gap-1">
-              <span className="text-gray-400 shrink-0">Leader</span>
-              <span className="text-right">{skillLabel(player.leadership)}</span>
-            </div>
-            <div className="flex justify-between gap-1">
-              <span className="text-gray-400 shrink-0">Loyalty</span>
-              <span className="text-right">{skillLabel(player.loyalty)}</span>
-            </div>
-          </div>
+      <div className={`self-stretch rounded-lg px-2 py-2 text-center shadow-sm ${positionStyle.badge}`}>
+        <p className="text-sm font-black tracking-wide">{position.pos.shortLabel}</p>
+        <p className="mt-0.5 text-[10px] font-semibold opacity-80">#{positionRank} · {position.score.toFixed(1)}</p>
+      </div>
+
+      <div className="min-w-0">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="grid h-7 min-w-7 shrink-0 place-items-center rounded-md bg-slate-900 px-1 text-[10px] font-bold text-white">{player.playerNumber > 0 ? player.playerNumber : "–"}</span>
+          <span className="truncate font-semibold text-slate-950">{displayName(player)}</span>
+          {specialtyImage && <img src={specialtyImage} alt={`${specialty} specialty`} title={specialty} width={18} height={18} className="shrink-0" />}
+          <a href={hattrickPlayerUrl(player.playerId)} target="_blank" rel="noopener noreferrer" aria-label={`Open ${displayName(player)} in Hattrick`} onClick={(event) => event.stopPropagation()} className="shrink-0 rounded px-1 text-xs text-indigo-600 opacity-0 transition focus:opacity-100 group-hover:opacity-100">↗</a>
         </div>
+        <p className="mt-1 text-xs text-slate-500">{player.age}y {player.ageDays}d{specialty ? ` · ${specialty}` : ""}</p>
+      </div>
 
-        {/* Right column: name, form, badges, skills */}
-        <div className="flex-1 min-w-0 flex flex-col">
-          <div className="flex items-center justify-between mb-1 gap-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <a
-                href={hattrickPlayerUrl(player.playerId)}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="font-semibold text-gray-900 truncate hover:text-blue-600 hover:underline"
-              >
-                {name}
-              </a>
-              {specIcon && (
-                <img
-                  src={specIcon}
-                  alt={specialty}
-                  title={specialty}
-                  width={20}
-                  height={20}
-                  className="shrink-0"
-                />
-              )}
-              <CardsIcon cards={player.cards} />
-              <InjuryIcon level={player.injuryLevel} />
-            </div>
-            {player.playerNumber > 0 && (
-              <span className="text-lg font-bold text-gray-400 shrink-0">
-                #{player.playerNumber}
-              </span>
-            )}
-          </div>
+      <div className="col-span-2 xl:col-span-1">
+        <p className="whitespace-nowrap text-sm font-bold tabular-nums text-slate-950">
+          {formatNumber(player.tsi)} <span className={`text-xs ${player.tsiLatestChange != null && player.tsiLatestChange < 0 ? "text-red-600" : "text-green-700"}`}>({signedNumber(player.tsiLatestChange)})</span>
+        </p>
+        <p className="mt-1 text-[10px] tabular-nums text-slate-500">30d <span className={player.tsiVariationMonthPct != null && player.tsiVariationMonthPct < 0 ? "text-red-600" : "text-green-700"}>{percent(player.tsiVariationMonthPct)}</span> · 90d <span className={player.tsiVariationQuarterPct != null && player.tsiVariationQuarterPct < 0 ? "text-red-600" : "text-green-700"}>{percent(player.tsiVariationQuarterPct)}</span></p>
+      </div>
 
-          <div className="flex flex-wrap items-baseline gap-1.5 mb-2 text-xs text-gray-500">
-            <span>{ageStr}</span>
-            <span className="text-gray-300">|</span>
-            <span className="inline-flex flex-col items-end leading-none">
-              <span>TSI {formatNumber(player.tsi)}</span>
-              {tsiDelta !== null && tsiDelta !== 0 && (
-                <span
-                  className={`mt-0.5 text-[8px] font-medium tabular-nums ${
-                    tsiDelta > 0 ? "text-green-600" : "text-red-500"
-                  }`}
-                >
-                  {tsiDelta > 0 ? `+${formatNumber(tsiDelta)}` : formatNumber(tsiDelta)}
-                </span>
-              )}
-            </span>
-            <span className="text-gray-300">|</span>
-            <span className="font-medium text-gray-600">
-              {effectivePosition.pos.shortLabel}:{" "}
-              <span className="text-gray-800">
-                {(Math.round(effectivePosition.score * 10) / 10).toFixed(1)}
-              </span>
-            </span>
-            {(player.trainingFullWeeks != null ||
-              player.trainingPartial != null) && (
-              <>
-                <span className="text-gray-300">|</span>
-                <DumbbellRow
-                  compact
-                  fullWeeks={player.trainingFullWeeks ?? 0}
-                  partialFraction={player.trainingPartial ?? 0}
-                  totalUnits={player.trainingUnits}
-                  programLabel={trainingProgramLabel}
-                />
-              </>
-            )}
-          </div>
+      <div className="col-span-2 space-y-2 xl:col-span-1">
+        <ConditionBar label="Stamina" value={player.staminaSkill} color="bg-cyan-500" />
+        <ConditionBar label="Form" value={player.playerForm} color="bg-violet-500" />
+      </div>
 
-          {player.transferListed && (
-            <div className="mb-2">
-              <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
-                Transfer listed
-              </span>
-            </div>
-          )}
+      <div className="col-span-2 flex gap-1.5 xl:col-span-1">
+        {topSkills(player).map((skill) => (
+          <span key={skill.key} title={skill.label} className={`flex min-w-10 flex-1 flex-col items-center rounded-md px-1.5 py-1.5 text-center ring-1 ${SKILL_STYLES[skill.key] ?? "bg-slate-50 text-slate-700 ring-slate-200"}`}>
+            <span className="text-[9px] font-bold uppercase tracking-wider opacity-70">{SKILL_SHORT[skill.key] ?? skill.label.slice(0, 2)}</span>
+            <strong className="mt-0.5 text-sm leading-none tabular-nums">{player[skill.key]}</strong>
+          </span>
+        ))}
+      </div>
 
-          <div className="space-y-1 mt-auto">
-            {SKILL_KEYS.filter(({ key }) => key !== "staminaSkill").map(({ key, label }) => (
-              <SkillBar
-                key={key}
-                label={label}
-                level={player[key as keyof Player] as number}
-                change={changeMap.get(key)}
-              />
-            ))}
-          </div>
-        </div>
+      <div>
+        <p className="text-sm font-semibold tabular-nums text-slate-900">{player.estimatedValue == null ? "Unavailable" : formatMoney(player.estimatedValue)}</p>
+        <p className="mt-1 text-[10px] text-slate-400">Estimated value</p>
+      </div>
+
+      <div>
+        <p className="text-xs font-semibold tabular-nums text-slate-700">{player.trainingEstimatedWeeks == null ? "Not configured" : `${(player.trainingUnits ?? 0).toFixed(1)} / ${player.trainingEstimatedWeeks.toFixed(1)}w`}</p>
+        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className={progress != null && progress >= 100 ? "h-full rounded-full bg-amber-500" : "h-full rounded-full bg-indigo-600"} style={{ width: `${progress ?? 0}%` }} /></div>
+        <p className="mt-1 text-[10px] text-slate-400">{progress == null ? "Training progress" : `${progress.toFixed(0)}% estimated`}</p>
       </div>
     </div>
   );

@@ -38,8 +38,6 @@ export interface Player {
   setPiecesSkill: number;
   playerCategoryId: number;
   transferListed: boolean;
-  avatarBackground: string;
-  avatarLayers: string;
   positionScores: Record<string, number>;
   positionOverride: string | null;
   recentChanges: PlayerChange[];
@@ -50,6 +48,13 @@ export interface Player {
   trainingFullWeeks?: number;
   trainingPartial?: number;
   trainingLastPopAt?: string | null;
+  trainingFocusSkillKey?: string | null;
+  trainingEstimatedWeeks?: number | null;
+  estimatedValue?: number | null;
+  tsiVariationWeek?: number | null;
+  tsiVariationMonthPct?: number | null;
+  tsiVariationQuarterPct?: number | null;
+  tsiLatestChange?: number | null;
 }
 
 export interface TrainingProgress {
@@ -77,6 +82,18 @@ export interface TrainingProgramsResponse {
 
 export interface TrainingSettings {
   trainingTypeId: number | null;
+  trainingFocusSkillKey: string | null;
+  estimateBaseWeeks: number | null;
+  estimateAgeIncrementWeeks: number | null;
+  estimateSkillIncrementWeeks: number | null;
+}
+
+export interface TrainingSettingsPayload {
+  trainingTypeId?: number;
+  trainingFocusSkillKey?: string | null;
+  estimateBaseWeeks?: number | null;
+  estimateAgeIncrementWeeks?: number | null;
+  estimateSkillIncrementWeeks?: number | null;
 }
 
 export interface PlayersResponse {
@@ -89,6 +106,14 @@ export interface PlayersResponse {
 export interface PlayerDetailResponse {
   player: Player;
   allChanges: PlayerChange[];
+  history: PlayerHistoryPoint[];
+}
+
+export interface PlayerHistoryPoint {
+  at: string;
+  tsi: number;
+  salary: number;
+  trainingSkill: number | null;
 }
 
 export interface TransferSearchParams {

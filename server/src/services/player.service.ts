@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { ChppClient } from "../chpp/client";
-import { ChppPlayer, ChppPlayerAvatar } from "../chpp/types";
+import { ChppPlayer } from "../chpp/types";
 import { computePositionScores } from "../lib/positionRatings";
 import { ONE_WEEK_MS } from "../lib/constants";
 import {
@@ -10,8 +10,11 @@ import {
   lastMatchFromPlayer,
   progressMapByPlayerId,
   recordWeekFromLastMatch,
-  syncTrainingTypeFromChpp,
+  focusSkillForProgram,
 } from "./training.service";
+import { estimateTrainingWeeks } from "../lib/trainingForecast";
+import { calculateTsiVariations } from "../lib/squadMetrics";
+import { predictForPlayerDetails } from "./pricePredictor.service";
 
 const SKILL_FIELDS = [
   "staminaSkill",
@@ -36,7 +39,7 @@ const TRACKED_FIELDS = [
   "cards",
 ] as const;
 
-function playerToDetailsData(p: ChppPlayer, avatar?: ChppPlayerAvatar) {
+function playerToDetailsData(p: ChppPlayer) {
   return {
     playerId: p.PlayerID,
     firstName: p.FirstName,
@@ -84,8 +87,6 @@ function playerToDetailsData(p: ChppPlayer, avatar?: ChppPlayerAvatar) {
     careerAssists: p.CareerAssists,
     playerCategoryId: p.PlayerCategoryId,
     transferListed: p.TransferListed,
-    avatarBackground: avatar?.backgroundImage ?? "",
-    avatarLayers: avatar ? JSON.stringify(avatar.layers) : "[]",
     lastMatchDate: p.LastMatch?.Date ?? null,
     lastMatchPositionCode: p.LastMatch?.PositionCode ?? null,
     lastMatchPlayedMinutes: p.LastMatch?.PlayedMinutes ?? 0,
@@ -118,6 +119,32 @@ async function buildPlayersWithChanges(
   detailsMap: Map<number, Record<string, unknown>>,
   since: Date,
 ) {
+  const [snapshots, tsiChanges] = await Promise.all([
+    prisma.playerDetails.findMany({
+      where: { playerId: { in: playerIds } },
+      select: { playerId: true, fetchedAt: true, tsi: true },
+      orderBy: { fetchedAt: "desc" },
+    }),
+    prisma.playerChange.findMany({
+      where: { playerId: { in: playerIds }, key: "tsi" },
+      orderBy: { detectedAt: "desc" },
+    }),
+  ]);
+  const snapshotsByPlayer = new Map<number, Array<{ fetchedAt: Date; tsi: number }>>();
+  for (const snapshot of snapshots) {
+    const rows = snapshotsByPlayer.get(snapshot.playerId) ?? [];
+    rows.push(snapshot);
+    snapshotsByPlayer.set(snapshot.playerId, rows);
+  }
+  const latestTsiChangeByPlayer = new Map<number, number>();
+  for (const change of tsiChanges) {
+    if (!latestTsiChangeByPlayer.has(change.playerId)) {
+      latestTsiChangeByPlayer.set(
+        change.playerId,
+        Number(change.newValue) - Number(change.oldValue),
+      );
+    }
+  }
   return Promise.all(
     playerIds.map(async (playerId) => {
       const details = detailsMap.get(playerId)!;
@@ -125,14 +152,21 @@ async function buildPlayersWithChanges(
         where: { playerId, detectedAt: { gte: since } },
         orderBy: { detectedAt: "desc" },
       });
-      return { ...withPositionScores(details), recentChanges };
+      return {
+        ...withPositionScores(details),
+        ...calculateTsiVariations(
+          details["tsi"] as number,
+          snapshotsByPlayer.get(playerId) ?? [],
+        ),
+        tsiLatestChange: latestTsiChangeByPlayer.get(playerId) ?? null,
+        recentChanges,
+      };
     }),
   );
 }
 
 export async function getPlayersFromDb(
   prisma: PrismaClient,
-  trainingTypeId?: number,
 ) {
   const teamId = process.env.CHPP_TEAM_ID;
   if (!teamId) throw new Error("CHPP_TEAM_ID not configured");
@@ -167,13 +201,32 @@ export async function getPlayersFromDb(
     weekAgo,
   );
 
-  if (trainingTypeId) {
-    players = (await attachTrainingProgress(
-      prisma,
-      players as Record<string, unknown>[],
-      trainingTypeId,
-    )) as typeof players;
-  }
+  const settings = await getTeamSettings(prisma);
+  const activeTrainingTypeId = settings.trainingTypeId ?? 8;
+  const focusSkillKey = focusSkillForProgram(
+    activeTrainingTypeId,
+    settings.trainingFocusSkillKey,
+  );
+  players = (await attachTrainingProgress(
+    prisma,
+    players as Record<string, unknown>[],
+    activeTrainingTypeId,
+    focusSkillKey,
+    settings,
+  )) as typeof players;
+
+  const estimates = await predictForPlayerDetails(
+    prisma,
+    players.map((player) => ({
+      playerId: (player as Record<string, unknown>)["playerId"] as number,
+      details: player as never,
+    })),
+  );
+  players = players.map((player) => ({
+    ...player,
+    estimatedValue:
+      estimates.get((player as Record<string, unknown>)["playerId"] as number) ?? null,
+  }));
 
   const fetchedAt = trackings.reduce(
     (latest, t) => (t.lastUpdatedAt > latest ? t.lastUpdatedAt : latest),
@@ -195,23 +248,10 @@ export async function refreshPlayersFromChpp(
   const teamId = process.env.CHPP_TEAM_ID;
   if (!teamId) throw new Error("CHPP_TEAM_ID not configured");
 
-  const [response, avatarsResponse] = await Promise.all([
-    chpp.getPlayers(teamId),
-    chpp.getAvatars(teamId).catch(() => null),
-    syncTrainingTypeFromChpp(prisma, chpp, teamId),
-  ]);
+  const response = await chpp.getPlayers(teamId);
   const settings = await getTeamSettings(prisma);
   const defaultTrainingTypeId = settings.trainingTypeId ?? 8;
   const now = new Date();
-
-  const avatarMap = new Map<number, ChppPlayerAvatar>();
-  if (avatarsResponse) {
-    for (const a of avatarsResponse.players) {
-      avatarMap.set(a.playerId, a);
-    }
-  }
-
-  const playersWithChanges = [];
 
   for (const player of response.Players) {
     const previous = await prisma.playerDetails.findFirst({
@@ -219,8 +259,7 @@ export async function refreshPlayersFromChpp(
       orderBy: { fetchedAt: "desc" },
     });
 
-    const avatar = avatarMap.get(player.PlayerID);
-    const detailsData = playerToDetailsData(player, avatar);
+    const detailsData = playerToDetailsData(player);
     const snapshot = await prisma.playerDetails.create({
       data: { ...detailsData, fetchedAt: now },
     });
@@ -268,32 +307,18 @@ export async function refreshPlayersFromChpp(
       );
     }
 
-    const recentChanges = await prisma.playerChange.findMany({
-      where: {
-        playerId: player.PlayerID,
-        detectedAt: { gte: new Date(now.getTime() - ONE_WEEK_MS) },
-      },
-      orderBy: { detectedAt: "desc" },
-    });
-
-    playersWithChanges.push({
-      ...withPositionScores(snapshot as unknown as Record<string, unknown>),
-      recentChanges,
-    });
   }
 
-  return {
-    teamId: response.TeamID,
-    teamName: response.TeamName,
-    fetchedAt: now.toISOString(),
-    players: playersWithChanges,
-  };
+  const result = await getPlayersFromDb(prisma);
+  return { ...result, teamId: response.TeamID, teamName: response.TeamName, fetchedAt: now.toISOString() };
 }
 
 async function attachTrainingProgress(
   prisma: PrismaClient,
   players: Record<string, unknown>[],
   trainingTypeId: number,
+  focusSkillKey: string | null,
+  settings: Awaited<ReturnType<typeof getTeamSettings>>,
 ) {
   const playerIds = players.map((p) => p.playerId as number);
   const lastMatchByPlayer = new Map(
@@ -311,17 +336,23 @@ async function attachTrainingProgress(
     playerIds,
     trainingTypeId,
     lastMatchByPlayer,
+    focusSkillKey ?? undefined,
   );
   const progressMap = progressMapByPlayerId(progress);
   return players.map((p) => {
     const prog = progressMap.get(p.playerId as number);
     if (!prog) return p;
+    const focusSkill = focusSkillKey ? (p[focusSkillKey] as number) : 0;
     return {
       ...p,
       trainingUnits: prog.totalUnits,
       trainingFullWeeks: prog.fullWeeks,
       trainingPartial: prog.partialFraction,
       trainingLastPopAt: prog.lastPopAt,
+      trainingFocusSkillKey: focusSkillKey,
+      trainingEstimatedWeeks: focusSkillKey
+        ? estimateTrainingWeeks(settings, p.age as number, p.ageDays as number, focusSkill)
+        : null,
     };
   });
 }
@@ -329,7 +360,6 @@ async function attachTrainingProgress(
 export async function getPlayerDetail(
   prisma: PrismaClient,
   playerId: number,
-  trainingTypeId?: number,
 ) {
   const tracking = await prisma.playerTracking.findUnique({
     where: { playerId },
@@ -356,13 +386,56 @@ export async function getPlayerDetail(
     recentChanges,
   };
 
-  const player = trainingTypeId
-    ? (await attachTrainingProgress(prisma, [basePlayer], trainingTypeId))[0]
-    : basePlayer;
+  const settings = await getTeamSettings(prisma);
+  const activeTrainingTypeId = settings.trainingTypeId ?? 8;
+  const focusSkillKey = focusSkillForProgram(
+    activeTrainingTypeId,
+    settings.trainingFocusSkillKey,
+  );
+  const playerWithProgress = (await attachTrainingProgress(
+    prisma,
+    [basePlayer],
+    activeTrainingTypeId,
+    focusSkillKey,
+    settings,
+  ))[0];
+  const detailEstimates = await predictForPlayerDetails(prisma, [
+    { playerId, details: playerWithProgress as never },
+  ]);
+  const player = {
+    ...playerWithProgress,
+    estimatedValue: detailEstimates.get(playerId) ?? null,
+  };
+
+  const snapshots = await prisma.playerDetails.findMany({
+    where: { playerId },
+    orderBy: { fetchedAt: "asc" },
+    select: {
+      fetchedAt: true,
+      tsi: true,
+      salary: true,
+      keeperSkill: true,
+      playmakerSkill: true,
+      scorerSkill: true,
+      passingSkill: true,
+      wingerSkill: true,
+      defenderSkill: true,
+      setPiecesSkill: true,
+    },
+  });
+  const history = snapshots.map((snapshot) => ({
+    at: snapshot.fetchedAt.toISOString(),
+    tsi: snapshot.tsi,
+    salary: snapshot.salary,
+    trainingSkill: focusSkillKey
+      ? (snapshot as unknown as Record<string, number>)[focusSkillKey]
+      : null,
+  }));
 
   return {
     player,
     allChanges,
+    history,
   };
 }
 

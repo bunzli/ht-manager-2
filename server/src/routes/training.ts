@@ -5,9 +5,10 @@ import { errorResponse } from "../lib/routeUtils";
 import {
   getTeamSettings,
   getTrainingProgress,
+  focusSkillForProgram,
   lastMatchFromDetails,
   listPrograms,
-  updateTeamTrainingType,
+  updateTrainingSettings,
 } from "../services/training.service";
 
 export function createTrainingRouter(prisma: PrismaClient): Router {
@@ -25,7 +26,11 @@ export function createTrainingRouter(prisma: PrismaClient): Router {
     asyncHandler(async (_req, res) => {
       const settings = await getTeamSettings(prisma);
       res.json({
-        trainingTypeId: settings.trainingTypeId,
+        ...settings,
+        trainingFocusSkillKey: focusSkillForProgram(
+          settings.trainingTypeId,
+          settings.trainingFocusSkillKey,
+        ),
       });
     }),
   );
@@ -33,15 +38,15 @@ export function createTrainingRouter(prisma: PrismaClient): Router {
   router.patch(
     "/settings",
     asyncHandler(async (req, res) => {
-      const raw = req.body?.trainingTypeId;
-      const trainingTypeId =
-        typeof raw === "number" ? raw : parseInt(String(raw ?? ""), 10);
-      if (Number.isNaN(trainingTypeId)) {
-        return errorResponse(res, "trainingTypeId is required", null, 400);
-      }
       try {
-        const settings = await updateTeamTrainingType(prisma, trainingTypeId);
-        res.json({ trainingTypeId: settings.trainingTypeId });
+        const settings = await updateTrainingSettings(prisma, req.body ?? {});
+        res.json({
+          ...settings,
+          trainingFocusSkillKey: focusSkillForProgram(
+            settings.trainingTypeId,
+            settings.trainingFocusSkillKey,
+          ),
+        });
       } catch (err) {
         errorResponse(res, "Invalid training type", err, 400);
       }
@@ -80,6 +85,10 @@ export function createTrainingRouter(prisma: PrismaClient): Router {
         playerIds,
         trainingTypeId,
         lastMatchByPlayer,
+        focusSkillForProgram(
+          trainingTypeId,
+          (await getTeamSettings(prisma)).trainingFocusSkillKey,
+        ) ?? undefined,
       );
 
       res.json({ trainingTypeId, progress });

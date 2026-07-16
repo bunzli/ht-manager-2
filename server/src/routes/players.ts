@@ -17,15 +17,7 @@ export function createPlayersRouter(prisma: PrismaClient, chpp: ChppClient) {
     "/",
     asyncHandler(async (req: Request, res: Response) => {
       try {
-        const trainingTypeId = req.query.trainingTypeId
-          ? Number(req.query.trainingTypeId)
-          : undefined;
-        const result = await getPlayersFromDb(
-          prisma,
-          trainingTypeId && !Number.isNaN(trainingTypeId)
-            ? trainingTypeId
-            : undefined,
-        );
+        const result = await getPlayersFromDb(prisma);
         res.json(result);
       } catch (err) {
         errorResponse(res, "Failed to read players", err);
@@ -52,16 +44,7 @@ export function createPlayersRouter(prisma: PrismaClient, chpp: ChppClient) {
       if (playerId === null) return;
 
       try {
-        const trainingTypeId = req.query.trainingTypeId
-          ? Number(req.query.trainingTypeId)
-          : undefined;
-        const result = await getPlayerDetail(
-          prisma,
-          playerId,
-          trainingTypeId && !Number.isNaN(trainingTypeId)
-            ? trainingTypeId
-            : undefined,
-        );
+        const result = await getPlayerDetail(prisma, playerId);
         if (!result) {
           res.status(404).json({ error: "Player not found" });
           return;

@@ -1,8 +1,8 @@
 import type { PrismaClient } from "@prisma/client";
-import type { ChppClient } from "../chpp/client";
 import type { ChppPlayer } from "../chpp/types";
 import { getHtWeekStart } from "../lib/constants";
 import { TRAINING_PROGRAMS, getTrainingProgram } from "../lib/trainingPrograms";
+import { isValidForecastValue } from "../lib/trainingForecast";
 import {
   getProgressForPlayers,
   weekUnitsForSnapshot,
@@ -33,21 +33,77 @@ export async function updateTeamTrainingType(
   });
 }
 
-export async function syncTrainingTypeFromChpp(
+export interface TrainingSettingsInput {
+  trainingTypeId?: number;
+  trainingFocusSkillKey?: string | null;
+  estimateBaseWeeks?: number | null;
+  estimateAgeIncrementWeeks?: number | null;
+  estimateSkillIncrementWeeks?: number | null;
+}
+
+export function focusSkillForProgram(
+  trainingTypeId: number | null,
+  configuredFocus?: string | null,
+): string | null {
+  if (!trainingTypeId) return null;
+  const program = getTrainingProgram(trainingTypeId);
+  if (!program) return null;
+  return configuredFocus && program.popSkillKeys.includes(configuredFocus)
+    ? configuredFocus
+    : program.popSkillKeys[0] ?? null;
+}
+
+export async function updateTrainingSettings(
   prisma: PrismaClient,
-  chpp: ChppClient,
-  teamId: string | number,
+  input: TrainingSettingsInput,
 ) {
-  try {
-    const training = await chpp.getTraining(teamId);
-    if (getTrainingProgram(training.TrainingType)) {
-      await updateTeamTrainingType(prisma, training.TrainingType);
-      return training.TrainingType;
-    }
-  } catch (err) {
-    console.warn("[training] Could not fetch CHPP training.xml:", err);
+  const current = await getTeamSettings(prisma);
+  const trainingTypeId = input.trainingTypeId ?? current.trainingTypeId;
+  if (!trainingTypeId || !getTrainingProgram(trainingTypeId)) {
+    throw new Error("A valid training program is required");
   }
-  return null;
+
+  const focus = input.trainingFocusSkillKey !== undefined
+    ? input.trainingFocusSkillKey
+    : input.trainingTypeId !== undefined
+      ? null
+      : current.trainingFocusSkillKey;
+  const program = getTrainingProgram(trainingTypeId)!;
+  if (focus && !program.popSkillKeys.includes(focus)) {
+    throw new Error("Training focus must be trained by the selected program");
+  }
+  const resolvedFocus = focusSkillForProgram(trainingTypeId, focus);
+
+  const forecastEntries: Array<[keyof TrainingSettingsInput, boolean]> = [
+    ["estimateBaseWeeks", false],
+    ["estimateAgeIncrementWeeks", false],
+    ["estimateSkillIncrementWeeks", false],
+  ];
+  for (const [key, allowZero] of forecastEntries) {
+    const value = input[key];
+    if (value !== undefined && value !== null && !isValidForecastValue(value, allowZero)) {
+      throw new Error(`${key} must be a positive number`);
+    }
+  }
+
+  return prisma.teamSettings.upsert({
+    where: { id: 1 },
+    update: {
+      trainingTypeId,
+      trainingFocusSkillKey: resolvedFocus,
+      estimateBaseWeeks: input.estimateBaseWeeks,
+      estimateAgeIncrementWeeks: input.estimateAgeIncrementWeeks,
+      estimateSkillIncrementWeeks: input.estimateSkillIncrementWeeks,
+    },
+    create: {
+      id: 1,
+      trainingTypeId,
+      trainingFocusSkillKey: resolvedFocus,
+      estimateBaseWeeks: input.estimateBaseWeeks ?? null,
+      estimateAgeIncrementWeeks: input.estimateAgeIncrementWeeks ?? null,
+      estimateSkillIncrementWeeks: input.estimateSkillIncrementWeeks ?? null,
+    },
+  });
 }
 
 export function lastMatchFromPlayer(player: ChppPlayer): LastMatchSnapshot | null {
@@ -114,12 +170,14 @@ export async function recordWeekFromLastMatch(
     update: {
       positionCode: lastMatch.positionCode,
       playedMinutes: lastMatch.playedMinutes,
+      trainingTypeId: defaultTrainingTypeId,
     },
     create: {
       playerId,
       weekStart,
       positionCode: lastMatch.positionCode,
       playedMinutes: lastMatch.playedMinutes,
+      trainingTypeId: defaultTrainingTypeId,
     },
   });
 }
@@ -138,12 +196,14 @@ export async function getTrainingProgress(
   playerIds: number[],
   trainingTypeId: number,
   lastMatchByPlayer: Map<number, LastMatchSnapshot>,
+  focusSkillKey?: string,
 ): Promise<PlayerTrainingProgress[]> {
   return getProgressForPlayers(
     prisma,
     playerIds,
     trainingTypeId,
     lastMatchByPlayer,
+    focusSkillKey,
   );
 }
 

@@ -96,6 +96,7 @@ model PlayerTrainingWeek {
   weekStart     DateTime
   positionCode  Int?
   playedMinutes Int      @default(0)
+  trainingTypeId Int?
   updatedAt     DateTime @updatedAt
 
   @@unique([playerId, weekStart])
@@ -106,6 +107,10 @@ model PlayerTrainingWeek {
 model TeamSettings {
   id             Int      @id @default(1)
   trainingTypeId Int?
+  trainingFocusSkillKey String?
+  estimateBaseWeeks Float?
+  estimateAgeIncrementWeeks Float?
+  estimateSkillIncrementWeeks Float?
   updatedAt      DateTime @updatedAt
 
   @@map("team_settings")

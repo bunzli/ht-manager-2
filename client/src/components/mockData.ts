@@ -1,14 +1,5 @@
 import type { Player } from "../lib/types";
 
-const mockAvatarLayers = JSON.stringify([
-  { x: 5, y: 5, image: "/Img/Avatar/bodies/bd8_s1.png" },
-  { x: 5, y: 5, image: "/Img/Avatar/faces/f7c.png" },
-  { x: 19, y: -1, image: "/Img/Avatar/eyes/e14c.png" },
-  { x: 28, y: 36, image: "/Img/Avatar/mouths/m33c.png" },
-  { x: 14, y: 6, image: "/Img/Avatar/noses/n38.png" },
-  { x: 5, y: 5, image: "/Img/Avatar/hair/f7h7e.png" },
-]);
-
 const basePlayer: Player = {
   id: 1,
   playerId: 100001,
@@ -40,8 +31,6 @@ const basePlayer: Player = {
   setPiecesSkill: 5,
   playerCategoryId: 5,
   transferListed: false,
-  avatarBackground: "/Img/Avatar/backgrounds/bg_blue_int.png",
-  avatarLayers: mockAvatarLayers,
   positionScores: { goalkeeper: 1.2, centralDefender: 4.5, wingBack: 3.8, innerMidfielder: 12.1, winger: 6.3, forward: 8.7 },
   positionOverride: null,
   recentChanges: [],
@@ -146,8 +135,6 @@ export const mockPlayers: Player[] = [
     setPiecesSkill: 3,
     injuryLevel: 2,
     playerCategoryId: 3,
-    avatarBackground: "/Img/Avatar/backgrounds/bg_blue_int.png",
-    avatarLayers: "[]",
     recentChanges: [],
   },
   {

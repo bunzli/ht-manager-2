@@ -1,4 +1,4 @@
-import type { TrainingProgress, TrainingProgramsResponse, TrainingSettings } from "./types";
+import type { TrainingProgress, TrainingProgramsResponse, TrainingSettings, TrainingSettingsPayload } from "./types";
 
 const BASE = "/api";
 
@@ -33,9 +33,9 @@ export function fetchTrainingSettings(): Promise<TrainingSettings> {
 }
 
 export function updateTrainingSettings(
-  trainingTypeId: number,
+  settings: TrainingSettingsPayload,
 ): Promise<TrainingSettings> {
-  return patchJson<TrainingSettings>("/training/settings", { trainingTypeId });
+  return patchJson<TrainingSettings>("/training/settings", settings);
 }
 
 export function fetchTrainingProgress(
