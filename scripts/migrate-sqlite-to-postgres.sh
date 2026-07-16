@@ -3,6 +3,8 @@ set -eu
 
 SOURCE_SQLITE_PATH=/source/prod.db
 BACKUP_PATH=/backup/prod.db
+MIGRATION_MARKER=/backup/postgres-migration-complete
+INITIAL_MIGRATION=20260716000000_init
 
 fail() {
   echo "SQLite-to-PostgreSQL migration aborted: $1" >&2
@@ -111,15 +113,26 @@ price_model
 TABLES
 }
 
+completed_migration_is_valid() {
+  application_table_count=$(psql_db -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('team_settings', 'player_details', 'player_tracking', 'player_training_week', 'player_change', 'market_study', 'custom_chart', 'transfer_player', 'price_model');")
+  applied_migration_count=$(psql_db -Atc "SELECT count(*) FROM \"_prisma_migrations\" WHERE \"migration_name\" = '$INITIAL_MIGRATION' AND \"finished_at\" IS NOT NULL;")
+  [ "$application_table_count" = "9" ] && [ "$applied_migration_count" = "1" ]
+}
+
 : "$DATABASE_URL"
 PSQL_DATABASE_URL=$(node -e 'const url = new URL(process.env.DATABASE_URL); url.searchParams.delete("schema"); process.stdout.write(url.toString());')
 [ -r "$SOURCE_SQLITE_PATH" ] || fail "the read-only source database is missing"
-[ ! -e "$BACKUP_PATH" ] || fail "a backup already exists; preserve it and use a new backup volume for another attempt"
 
 echo "Checking the PostgreSQL connection without changing data."
 psql_db -c 'SELECT current_user, current_database();' > /dev/null
 
 target_table_count=$(psql_db -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';")
+[ -e "$MIGRATION_MARKER" ] && {
+  completed_migration_is_valid || fail "the completion marker does not match a completed PostgreSQL migration"
+  echo "PostgreSQL migration was already verified; skipping the import."
+  exit 0
+}
+[ ! -e "$BACKUP_PATH" ] || fail "a backup already exists; preserve it and use a new backup volume for another attempt"
 [ "$target_table_count" = "0" ] || fail "the target database is not empty"
 
 integrity=$(sqlite3 "$SOURCE_SQLITE_PATH" "PRAGMA integrity_check;")
@@ -158,5 +171,9 @@ done
 
 backup_hash_after=$(sha256sum "$BACKUP_PATH" | awk '{print $1}')
 [ "$backup_hash_before" = "$backup_hash_after" ] || fail "the SQLite backup changed during import"
+
+marker_tmp=$MIGRATION_MARKER.tmp
+printf '%s\n' "$backup_hash_after" > "$marker_tmp"
+mv "$marker_tmp" "$MIGRATION_MARKER"
 
 echo "Migration completed. Keep both SQLite volumes intact until production verification is complete."

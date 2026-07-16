@@ -15,6 +15,9 @@ services:
       - CHPP_TEAM_ID=${CHPP_TEAM_ID}
     networks:
       - shared_backend
+    depends_on:
+      ht-manager-db-migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
@@ -27,8 +30,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.migration
-    profiles:
-      - migration
     volumes:
       - ht-manager-data:/source:ro
       - ht-manager-sqlite-backup:/backup
@@ -45,6 +46,9 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     command: --interval 300 ht-manager
+    depends_on:
+      ht-manager:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
