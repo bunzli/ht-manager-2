@@ -6,9 +6,14 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "db:migrate": "prisma migrate dev",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
+    "db:migrate": "npm run db:migrate:sqlite",
+    "db:generate": "npm run db:generate:sqlite",
+    "db:push": "npm run db:push:sqlite",
+    "db:migrate:sqlite": "prisma migrate dev --schema prisma/schema.prisma",
+    "db:generate:sqlite": "prisma generate --schema prisma/schema.prisma",
+    "db:push:sqlite": "prisma db push --schema prisma/schema.prisma",
+    "db:migrate:postgres": "prisma migrate deploy --schema prisma/postgres/schema.prisma",
+    "db:generate:postgres": "prisma generate --schema prisma/postgres/schema.prisma",
     "test": "tsx --test src/lib/trainingPrograms.test.ts"
   },
   "dependencies": {

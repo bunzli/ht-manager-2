@@ -4,16 +4,17 @@ services:
     container_name: ht-manager
     ports:
       - "3001:3001"
-    volumes:
-      - ht-manager-data:/app/server/prisma/data
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=file:/app/server/prisma/data/prod.db
+      # Inject this only through Dockge's secret/environment configuration.
+      - DATABASE_URL
       - CHPP_CONSUMER_KEY=${CHPP_CONSUMER_KEY}
       - CHPP_CONSUMER_SECRET=${CHPP_CONSUMER_SECRET}
       - CHPP_ACCESS_TOKEN=${CHPP_ACCESS_TOKEN}
       - CHPP_ACCESS_TOKEN_SECRET=${CHPP_ACCESS_TOKEN_SECRET}
       - CHPP_TEAM_ID=${CHPP_TEAM_ID}
+    networks:
+      - shared_backend
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
@@ -21,6 +22,22 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  ht-manager-db-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migration
+    profiles:
+      - migration
+    volumes:
+      - ht-manager-data:/source:ro
+      - ht-manager-sqlite-backup:/backup
+    environment:
+      # Inject this only through Dockge's secret/environment configuration.
+      - DATABASE_URL
+    networks:
+      - shared_backend
+    restart: "no"
 
   watchtower:
     image: containrrr/watchtower
@@ -31,4 +48,11 @@ services:
     restart: unless-stopped
 
 volumes:
+  # Retained after cutover; it remains the SQLite rollback source.
   ht-manager-data:
+  ht-manager-sqlite-backup:
+
+networks:
+  shared_backend:
+    external: true
+    name: shared_backend

@@ -10,7 +10,7 @@ WORKDIR /app/server
 COPY server/package.json server/package-lock.json ./
 RUN npm ci
 COPY server/ ./
-RUN npx prisma generate
+RUN npx prisma generate --schema prisma/postgres/schema.prisma
 RUN npx tsc
 
 FROM node:20-alpine
@@ -25,7 +25,7 @@ COPY --from=server-build /app/server/prisma ./server/prisma
 
 COPY --from=client-build /app/client/dist ./client/dist
 
-RUN mkdir -p /app/server/prisma/data && chown -R appuser:appgroup /app
+RUN chown -R appuser:appgroup /app
 
 WORKDIR /app/server
 
@@ -35,4 +35,4 @@ USER appuser
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema prisma/postgres/schema.prisma && node dist/index.js"]
