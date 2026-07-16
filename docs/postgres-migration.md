@@ -21,7 +21,8 @@ ht_manager. It intentionally does not delete or modify the old SQLite volume.
 3. Confirm that the stack is attached to the existing shared_backend network.
    The compose file already declares this external network.
 4. Build or publish the application image containing this change before the
-   maintenance window. The migration helper is built from Dockerfile.migration.
+   maintenance window. The migration helper is included in that same image, so
+   Dockge does not need a local source checkout or a separate Docker build.
 
 ## Cutover
 

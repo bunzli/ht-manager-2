@@ -27,9 +27,11 @@ services:
       start_period: 40s
 
   ht-manager-db-migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile.migration
+    image: ghcr.io/bunzli/ht-manager-2:latest
+    entrypoint: ["/usr/local/bin/migrate-sqlite-to-postgres"]
+    command: []
+    # The named backup volume is created as root; the application remains non-root.
+    user: "0:0"
     volumes:
       - ht-manager-data:/source:ro
       - ht-manager-sqlite-backup:/backup
