@@ -23,17 +23,6 @@ services:
       retries: 3
       start_period: 40s
 
-  watchtower:
-    image: containrrr/watchtower
-    container_name: watchtower-ht-manager
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 300 ht-manager
-    depends_on:
-      ht-manager:
-        condition: service_healthy
-    restart: unless-stopped
-
 volumes:
   # Retained after the completed PostgreSQL cutover for rollback only.
   ht-manager-data:
