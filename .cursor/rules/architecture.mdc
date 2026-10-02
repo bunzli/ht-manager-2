@@ -168,6 +168,11 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 | File | Responsibility |
 |---|---|
 | `package.json` | Monorepo root: `dev`, `build`, `lint`, `format` scripts. |
+| `scripts/dev.mjs` | Selects compatible Node, prepares dependencies, starts each worktree with free ports, and keeps its Vite proxy connected to its API. |
+| `scripts/dev-config.mjs` | Finds the main Git checkout, resolves its shared SQLite database path, and selects frontend ports across all listening addresses. |
+| `scripts/dev-config.test.mjs` | Checks linked-worktree discovery and shared database resolution. |
+| `.tool-versions`, `.nvmrc` | Pin the local development Node version for asdf and nvm. |
+| `README.md` | Local development setup, shared worktree configuration, and Node selection. |
 | `eslint.config.mjs` | Root ESLint flat config with TypeScript + Prettier. |
 | `.prettierrc` | Prettier formatting rules. |
 | `.env.example` | Template for required environment variables (CHPP keys, PORT). |

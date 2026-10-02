@@ -40,8 +40,10 @@ if (process.env.NODE_ENV === "production") {
 
 const PORT = parseInt(process.env.PORT || "3001", 10);
 
-app.listen(PORT, () => {
-  console.log(`[server] Running on http://localhost:${PORT}`);
+const server = app.listen(PORT, () => {
+  const address = server.address();
+  const port = address && typeof address !== "string" ? address.port : PORT;
+  console.log(`[server] Running on http://localhost:${port}`);
   startScheduler();
 });
 
