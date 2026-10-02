@@ -26,6 +26,9 @@ export interface Player {
   salary: number;
   isAbroad: boolean;
   specialty: number;
+  countryId?: number;
+  avatarBackground?: string;
+  avatarLayers?: string;
   cards: number;
   injuryLevel: number;
   staminaSkill: number;

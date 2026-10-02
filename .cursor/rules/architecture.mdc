@@ -28,6 +28,8 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 
 | File | Responsibility |
 |---|---|
+| `services/avatar.service.ts` | Fetches squad avatars once per refresh and preserves stored images when unavailable. |
+| `lib/avatars.test.ts` | Checks avatar XML parsing and graceful refresh fallback. |
 | `services/player.service.ts` | Player CRUD, CHPP refresh, position-score computation, position-override persistence. |
 | `services/marketStudy.service.ts` | Market study lifecycle: create, list, detail, **patch (metadata)**, search, bulk-update, resolve transfers. Also manages custom chart configs (create/delete). |
 | `services/transferResolver.ts` | Matches pending transfer listings to completed transfers and resolves final prices/deadlines. |
@@ -118,8 +120,8 @@ Full-stack TypeScript monorepo for managing a Hattrick football team. The server
 
 | File | Responsibility |
 |---|---|
-| `components/PlayerCard.tsx` | Compact player summary card (name, age, skills, TSI). |
-| `components/PlayerList.tsx` | Renders a list of `PlayerCard` items. |
+| `components/PlayerCard.tsx` | Responsive Hattrick-style player card with identity, condition and every skill. |
+| `components/PlayerList.tsx` | Sorts a responsive grid of player cards and expands detail after the selected row. |
 | `components/PlayerAvatar.tsx` | Composites Hattrick avatar layers into a single image. |
 | `components/SkillBar.tsx` | Horizontal bar showing a skill level with colour coding. |
 | `components/PositionRatingsCard.tsx` | Grid of position ratings with weighted-skill breakdowns. |

@@ -15,6 +15,7 @@ import {
 import { estimateTrainingWeeks } from "../lib/trainingForecast";
 import { calculateTsiVariations } from "../lib/squadMetrics";
 import { predictForPlayerDetails } from "./pricePredictor.service";
+import { avatarSnapshotData, fetchSquadAvatars } from "./avatar.service";
 import { syncRecentMatches } from "./match.service";
 
 const SKILL_FIELDS = [
@@ -250,6 +251,7 @@ export async function refreshPlayersFromChpp(
   if (!teamId) throw new Error("CHPP_TEAM_ID not configured");
 
   const response = await chpp.getPlayers(teamId);
+  const avatars = await fetchSquadAvatars(chpp, teamId);
   const settings = await getTeamSettings(prisma);
   const defaultTrainingTypeId = settings.trainingTypeId ?? 8;
   const now = new Date();
@@ -274,7 +276,11 @@ export async function refreshPlayersFromChpp(
 
     const detailsData = playerToDetailsData(player);
     const snapshot = await prisma.playerDetails.create({
-      data: { ...detailsData, fetchedAt: now },
+      data: {
+        ...detailsData,
+        ...avatarSnapshotData(avatars.get(player.PlayerID), previous),
+        fetchedAt: now,
+      },
     });
 
     if (previous) {
@@ -438,6 +444,16 @@ export async function getPlayerDetail(
       setPiecesSkill: true,
     },
   });
+  const tsiChanges = allChanges.filter((change) => change.key === "tsi");
+  Object.assign(
+    player,
+    calculateTsiVariations(Number(tracking.latestDetails.tsi), [...snapshots].reverse()),
+    {
+      tsiLatestChange: tsiChanges.length
+        ? Number(tsiChanges[0].newValue) - Number(tsiChanges[0].oldValue)
+        : null,
+    },
+  );
   const history = snapshots.map((snapshot) => ({
     at: snapshot.fetchedAt.toISOString(),
     tsi: snapshot.tsi,
