@@ -257,6 +257,12 @@ export interface PlayerTransfersResponse {
   Transfers: PlayerTransfer[];
 }
 
+export interface ChppCountry {
+  countryId: number;
+  leagueId: number;
+  name: string;
+}
+
 export interface ChppAvatarLayer {
   x: number;
   y: number;

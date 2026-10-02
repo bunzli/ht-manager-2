@@ -57,3 +57,41 @@ export const HattrickLow: Story = { args: { label: "Set Pieces", level: 1, varia
 export const HattrickForm: Story = {
   args: { label: "Form", level: 8, maxLevel: 8, variant: "hattrick" },
 };
+
+export const TrainingChanges: Story = {
+  render: () => (
+    <div className="max-w-sm space-y-3">
+      {[1, 2, 3, 4, 5, 6, 7, 8].map((level) => (
+        <SkillBar key={level} label="Form" level={level} maxLevel={8} variant="hattrick" />
+      ))}
+      <SkillBar
+        label="Form ↑"
+        level={7}
+        maxLevel={8}
+        variant="hattrick"
+        change={{ oldValue: "5", newValue: "7" }}
+      />
+      <SkillBar
+        label="Stamina ↓"
+        level={4}
+        maxLevel={8}
+        variant="hattrick"
+        change={{ oldValue: "6", newValue: "4" }}
+      />
+      <SkillBar
+        label="Passing ↑"
+        level={10}
+        variant="hattrick"
+        change={{ oldValue: "9", newValue: "10" }}
+      />
+      <SkillBar
+        label="Scoring ↓"
+        level={6}
+        variant="hattrick"
+        change={{ oldValue: "8", newValue: "6" }}
+      />
+      <SkillBar label="Keeper" level={0} variant="hattrick" />
+      <SkillBar label="Playmaking" level={20} variant="hattrick" />
+    </div>
+  ),
+};

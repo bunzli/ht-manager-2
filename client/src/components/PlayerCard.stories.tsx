@@ -23,7 +23,21 @@ export const Default: Story = {
 };
 
 export const WithSkillChange: Story = {
-  args: { player: mockPlayers[1] },
+  args: {
+    player: {
+      ...mockPlayers[1],
+      countryId: 3,
+      countryName: "Germany",
+      countryFlagId: 3,
+      trainingBaselineAt: "2026-04-01T12:00:00Z",
+      tsiVariationTraining: 1200,
+      trainingChanges: {
+        keeperSkill: { oldValue: "11", newValue: "12" },
+        playerForm: { oldValue: "4", newValue: "6" },
+        staminaSkill: { oldValue: "7", newValue: "6" },
+      },
+    },
+  },
 };
 
 export const InjuredWithCards: Story = {
@@ -61,5 +75,33 @@ export const Selected: Story = { args: { player: mockPlayers[0], selected: true 
 export const BrokenAvatar: Story = {
   args: {
     player: { ...mockPlayers[0], avatarBackground: "/missing-avatar.png", avatarLayers: "[]" },
+  },
+};
+
+export const WithAvatarAndNationality: Story = {
+  args: {
+    player: {
+      ...mockPlayers[0],
+      countryId: 17,
+      countryName: "Chile",
+      countryFlagId: 18,
+      avatarBackground: "/Img/Avatar/backgrounds/card1.png",
+      avatarLayers: JSON.stringify([
+        { x: 9, y: 10, image: "/Img/Avatar/backgrounds/bg_blue_int.png" },
+        { x: 9, y: 10, image: "/Img/Avatar/bodies/bd2_s1.png" },
+        { x: 9, y: 10, image: "/Img/Avatar/faces/f9a.png" },
+        { x: 25, y: 15, image: "/Img/Avatar/eyes/e36b.png" },
+        { x: 32, y: 64, image: "/Img/Avatar/mouths/m34b.png" },
+        { x: 15, y: 20, image: "/Img/Avatar/noses/n35.png" },
+        { x: 9, y: 10, image: "/Img/Avatar/hair/f9h2d.png" },
+      ]),
+      trainingBaselineAt: "2026-04-01T12:00:00Z",
+      tsiVariationTraining: -500,
+      trainingChanges: {
+        playerForm: { oldValue: "8", newValue: "7" },
+        playmakerSkill: { oldValue: "8", newValue: "9" },
+        passingSkill: { oldValue: "10", newValue: "8" },
+      },
+    },
   },
 };

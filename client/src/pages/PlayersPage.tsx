@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { PlayerList, type PlayerSortKey } from "../components/PlayerList";
-import { fetchPlayers, refreshPlayers } from "../lib/api";
+import {
+  fetchPlayers,
+  fetchPlayerAvatars,
+  fetchCountries,
+  fetchSquadTsiHistory,
+  refreshPlayers,
+} from "../lib/api";
+import { SquadTsiChart } from "../components/SquadTsiChart";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { ErrorAlert } from "../components/ui/ErrorAlert";
 import { Link } from "react-router-dom";
@@ -18,12 +25,51 @@ export function PlayersPage() {
     queryFn: () => fetchPlayers(),
   });
 
+  const tsiHistory = useQuery({
+    queryKey: ["squad", "tsi-history"],
+    queryFn: fetchSquadTsiHistory,
+  });
+
+  const { data: avatars } = useQuery({
+    queryKey: ["players", "avatars"],
+    queryFn: fetchPlayerAvatars,
+    enabled:
+      data?.players.some(
+        (player) =>
+          !player.avatarBackground && (!player.avatarLayers || player.avatarLayers === "[]"),
+      ) ?? false,
+    staleTime: 60 * 60 * 1000,
+  });
+  const avatarMap = new Map(avatars?.map((avatar) => [avatar.playerId, avatar]));
+  const { data: countries } = useQuery({
+    queryKey: ["countries"],
+    queryFn: fetchCountries,
+    enabled: !!data?.players.length,
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+  const countryMap = new Map(countries?.map((country) => [country.countryId, country]));
+  const players = (data?.players ?? []).map((player) => {
+    const avatar = avatarMap.get(player.playerId);
+    const country = countryMap.get(player.countryId ?? 0);
+    return {
+      ...player,
+      ...(avatar &&
+      !player.avatarBackground &&
+      (!player.avatarLayers || player.avatarLayers === "[]")
+        ? avatar
+        : {}),
+      countryName: country?.name,
+      countryFlagId: country?.leagueId,
+    };
+  });
+
   const handleRefresh = async () => {
     setRefreshing(true);
     setRefreshError(null);
     try {
       const freshData = await refreshPlayers();
       queryClient.setQueryData(["players"], freshData);
+      queryClient.invalidateQueries({ queryKey: ["squad", "tsi-history"] });
       queryClient.invalidateQueries({ queryKey: ["training", "progress"] });
       queryClient.invalidateQueries({ queryKey: ["player"] });
     } catch (err) {
@@ -35,7 +81,6 @@ export function PlayersPage() {
 
   const displayError = refreshError ?? (error instanceof Error ? error.message : null);
 
-  const players = data?.players ?? [];
   const totalTsi = players.reduce((sum, player) => sum + player.tsi, 0);
   const weeklyTsi = players.reduce((sum, player) => sum + (player.tsiVariationWeek ?? 0), 0);
   const totalValue = players.reduce((sum, player) => sum + (player.estimatedValue ?? 0), 0);
@@ -113,6 +158,15 @@ export function PlayersPage() {
         </div>
       </section>
 
+      <SquadTsiChart
+        history={tsiHistory.data ?? []}
+        loading={tsiHistory.isLoading}
+        error={tsiHistory.error instanceof Error ? tsiHistory.error.message : null}
+        onRetry={() => {
+          void tsiHistory.refetch();
+        }}
+      />
+
       {displayError && (
         <div className="mb-6">
           <ErrorAlert title="Failed to load players" message={displayError} />
@@ -123,7 +177,7 @@ export function PlayersPage() {
         <LoadingSpinner message="Loading from database..." />
       ) : (
         <PlayerList
-          players={data?.players ?? []}
+          players={players}
           selectedPlayerId={selectedPlayerId}
           sortKey={sortKey}
           onSortChange={setSortKey}
