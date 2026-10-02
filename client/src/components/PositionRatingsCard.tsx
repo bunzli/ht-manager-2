@@ -3,7 +3,7 @@ import {
   POSITION_RATINGS,
   type PositionSkillKey,
 } from "../lib/positionRatings";
-import { skillLabel, skillColor } from "../lib/skills";
+import { skillLabel } from "../lib/skills";
 import type { Player } from "../lib/types";
 
 const WEIGHT_SKILL_LABELS: Record<PositionSkillKey, string> = {
@@ -21,11 +21,7 @@ interface Props {
   overrideSaving?: boolean;
 }
 
-export function PositionRatingsCard({
-  player,
-  onOverrideChange,
-  overrideSaving,
-}: Props) {
+export function PositionRatingsCard({ player, onOverrideChange, overrideSaving }: Props) {
   const scores = POSITION_RATINGS.map((pos) => ({
     pos,
     score: player.positionScores[pos.id] ?? 0,
@@ -35,30 +31,26 @@ export function PositionRatingsCard({
   const effectiveId = player.positionOverride ?? autoBestId;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <div className="flex items-start justify-between gap-4 mb-1">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4">
+      <div className="flex flex-col gap-3 mb-1 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
             Position Ratings
           </h3>
           <p className="text-xs text-gray-400 mt-0.5">
-            Weighted effective skill per position, adjusted for form, stamina,
-            experience &amp; specialty (normal orders)
+            Weighted effective skill per position, adjusted for form, stamina, experience &amp;
+            specialty (normal orders)
           </p>
         </div>
 
         {onOverrideChange && (
-          <div className="flex items-center gap-2 shrink-0">
-            <label className="text-xs text-gray-500 whitespace-nowrap">
-              Squad position
-            </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="text-xs text-gray-500 whitespace-nowrap">Squad position</label>
             <select
               value={player.positionOverride ?? ""}
               disabled={overrideSaving}
-              onChange={(e) =>
-                onOverrideChange(e.target.value === "" ? null : e.target.value)
-              }
-              className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 disabled:opacity-50 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              onChange={(e) => onOverrideChange(e.target.value === "" ? null : e.target.value)}
+              className="min-h-11 max-w-full text-xs border border-gray-300 rounded px-2 py-1 bg-white text-gray-700 disabled:opacity-50 focus:outline-none focus:ring-1 focus:ring-[#5B955F]"
             >
               <option value="">Auto ({scores[0]?.pos.shortLabel})</option>
               {POSITION_RATINGS.map((pos) => (
@@ -71,8 +63,9 @@ export function PositionRatingsCard({
               <button
                 disabled={overrideSaving}
                 onClick={() => onOverrideChange(null)}
-                className="text-xs text-gray-400 hover:text-red-500 disabled:opacity-50"
+                className="min-h-11 min-w-11 text-xs text-gray-400 hover:text-red-500 disabled:opacity-50"
                 title="Clear override"
+                aria-label="Clear position override"
               >
                 ✕
               </button>
@@ -85,57 +78,51 @@ export function PositionRatingsCard({
         {scores.map(({ pos, score }) => {
           const isEffective = pos.id === effectiveId;
           const isOverridden =
-            player.positionOverride !== null &&
-            player.positionOverride !== undefined;
+            player.positionOverride !== null && player.positionOverride !== undefined;
           const isAutoHighlight = !isOverridden && pos.id === autoBestId;
           const highlight = isEffective && (isOverridden || isAutoHighlight);
 
           const rounded = Math.round(score * 10) / 10;
           const barWidth = `${Math.min(100, (score / 20) * 100)}%`;
-          const barColor = skillColor(Math.round(score));
-          const entries = Object.entries(pos.weights) as [
-            PositionSkillKey,
-            number,
-          ][];
+          const barColor = "bg-[#5B955F]";
+          const entries = Object.entries(pos.weights) as [PositionSkillKey, number][];
           const totalWeight = entries.reduce((s, [, w]) => s + w, 0);
 
           return (
             <div
               key={pos.id}
               className={`rounded-lg p-3 border ${
-                highlight
-                  ? "border-blue-300 bg-blue-50"
-                  : "border-transparent bg-gray-50"
+                highlight ? "border-[#bfd0c0] bg-[#edf2ed]" : "border-transparent bg-gray-50"
               }`}
             >
-              <div className="flex items-center gap-3 mb-1.5">
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
                 <span
                   className={`text-xs font-bold w-8 shrink-0 ${
-                    highlight ? "text-blue-700" : "text-gray-500"
+                    highlight ? "text-[#426e46]" : "text-gray-500"
                   }`}
                 >
                   {pos.shortLabel}
                 </span>
                 <span
-                  className={`text-sm font-medium flex-1 ${
-                    highlight ? "text-blue-800" : "text-gray-700"
+                  className={`text-sm font-medium min-w-0 flex-1 ${
+                    highlight ? "text-[#426e46]" : "text-gray-700"
                   }`}
                 >
                   {pos.label}
                   {highlight && (
-                    <span className="ml-2 text-xs font-semibold text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full">
+                    <span className="ml-2 text-xs font-semibold text-[#426e46] bg-[#dce8dd] px-1.5 py-0.5 rounded-full">
                       {isOverridden ? "Manual" : "Best fit"}
                     </span>
                   )}
                 </span>
                 <span
                   className={`text-sm font-semibold tabular-nums ${
-                    highlight ? "text-blue-800" : "text-gray-700"
+                    highlight ? "text-[#426e46]" : "text-gray-700"
                   }`}
                 >
                   {rounded.toFixed(1)}
                 </span>
-                <span className="text-xs text-gray-400 w-24 text-right">
+                <span className="hidden text-xs text-gray-400 w-24 text-right sm:block">
                   {skillLabel(Math.floor(score))}
                 </span>
               </div>
@@ -158,14 +145,9 @@ export function PositionRatingsCard({
                     .map(([skill, weight]) => {
                       const pct = Math.round((weight / totalWeight) * 100);
                       return (
-                        <span
-                          key={skill}
-                          className="text-xs text-gray-400 tabular-nums"
-                        >
+                        <span key={skill} className="text-xs text-gray-400 tabular-nums">
                           {WEIGHT_SKILL_LABELS[skill]}{" "}
-                          <span className="text-gray-500 font-medium">
-                            {pct}%
-                          </span>
+                          <span className="text-gray-500 font-medium">{pct}%</span>
                         </span>
                       );
                     })}

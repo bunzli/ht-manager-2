@@ -51,3 +51,9 @@ export const WithDecrease: Story = {
     },
   },
 };
+
+export const Hattrick: Story = { args: { label: "Playmaking", level: 15, variant: "hattrick" } };
+export const HattrickLow: Story = { args: { label: "Set Pieces", level: 1, variant: "hattrick" } };
+export const HattrickForm: Story = {
+  args: { label: "Form", level: 8, maxLevel: 8, variant: "hattrick" },
+};

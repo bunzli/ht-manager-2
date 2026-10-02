@@ -6,6 +6,13 @@ const meta: Meta<typeof PlayerCard> = {
   title: "Components/PlayerCard",
   component: PlayerCard,
   parameters: { layout: "padded" },
+  decorators: [
+    (Story) => (
+      <div className="max-w-sm">
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 export default meta;
@@ -29,4 +36,30 @@ export const LongTermInjury: Story = {
 
 export const TransferListed: Story = {
   args: { player: mockPlayers[4] },
+};
+
+export const NarrowWithLongName: Story = {
+  args: {
+    player: {
+      ...mockPlayers[0],
+      firstName: "Alexandros",
+      nickName: "The captain",
+      lastName: "Papadopoulos Fernández",
+      keeperSkill: 0,
+      playmakerSkill: 20,
+    },
+  },
+  decorators: [
+    (Story) => (
+      <div style={{ width: 294 }}>
+        <Story />
+      </div>
+    ),
+  ],
+};
+export const Selected: Story = { args: { player: mockPlayers[0], selected: true } };
+export const BrokenAvatar: Story = {
+  args: {
+    player: { ...mockPlayers[0], avatarBackground: "/missing-avatar.png", avatarLayers: "[]" },
+  },
 };

@@ -422,8 +422,9 @@ export function parseAvatars(data: Record<string, unknown>): ChppAvatarsResponse
   const hd = data.HattrickData as Record<string, unknown>;
   const team = hd.Team as Record<string, unknown>;
   const rawPlayers = ensureArray(
-    (team?.Players as Record<string, unknown>)
-      ?.Player as Record<string, unknown>[] | Record<string, unknown>,
+    ((team?.Players ?? hd.Players) as Record<string, unknown>)?.Player as
+      | Record<string, unknown>[]
+      | Record<string, unknown>,
   );
 
   const players: ChppPlayerAvatar[] = rawPlayers.map((p) => {
@@ -435,7 +436,7 @@ export function parseAvatars(data: Record<string, unknown>): ChppAvatarsResponse
     const layers: ChppAvatarLayer[] = rawLayers.map((l) => ({
       x: toInt(l["@_x"]),
       y: toInt(l["@_y"]),
-      image: String(l.Image ?? ""),
+      image: String(l.Image ?? l.ImageURI ?? ""),
     }));
 
     return {
@@ -446,7 +447,7 @@ export function parseAvatars(data: Record<string, unknown>): ChppAvatarsResponse
   });
 
   return {
-    teamId: toInt(team?.TeamId),
+    teamId: toInt(team?.TeamId ?? team?.TeamID),
     players,
   };
 }

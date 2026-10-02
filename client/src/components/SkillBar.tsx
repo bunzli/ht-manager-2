@@ -6,12 +6,40 @@ interface SkillBarProps {
   level: number;
   maxLevel?: number;
   change?: PlayerChange;
+  variant?: "graded" | "hattrick";
 }
 
-export function SkillBar({ label, level, maxLevel = 20, change }: SkillBarProps) {
-  const pct = Math.min((level / maxLevel) * 100, 100);
+export function SkillBar({
+  label,
+  level,
+  maxLevel = 20,
+  change,
+  variant = "graded",
+}: SkillBarProps) {
+  const pct = Math.max(0, Math.min((level / maxLevel) * 100, 100));
   const color = skillColor(level);
   const levelLabel = skillLabel(level);
+
+  if (variant === "hattrick") {
+    const delta = change ? Number(change.newValue) - Number(change.oldValue) : 0;
+    return (
+      <div className="grid grid-cols-[80px_minmax(0,1fr)_24px] items-center gap-2 text-[13px] sm:grid-cols-[88px_minmax(0,1fr)_24px]">
+        <span className="text-right text-[#555]">{label}</span>
+        <div className="relative h-6 min-w-0 bg-[#ECECEC]">
+          <div className="absolute inset-y-0 left-0 bg-[#5B955F]" style={{ width: `${pct}%` }} />
+          <span className="relative flex h-full items-center whitespace-nowrap px-1.5 text-[11px] font-medium text-[#1e3520]">
+            {levelLabel}
+          </span>
+        </div>
+        <span
+          className="text-right tabular-nums text-[#555]"
+          title={delta ? `Change: ${delta > 0 ? "+" : ""}${delta}` : undefined}
+        >
+          {level}
+        </span>
+      </div>
+    );
+  }
 
   const changeDir = change
     ? Number(change.newValue) > Number(change.oldValue)

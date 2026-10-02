@@ -26,12 +26,7 @@ const TABS: { id: Tab; label: string; path: string }[] = [
 function MarketStudyRoute() {
   const { studyId } = useParams<{ studyId: string }>();
   const navigate = useNavigate();
-  return (
-    <MarketStudyInfoPage
-      studyId={Number(studyId)}
-      onBack={() => navigate("/market")}
-    />
-  );
+  return <MarketStudyInfoPage studyId={Number(studyId)} onBack={() => navigate("/market")} />;
 }
 
 export default function App() {
@@ -40,31 +35,32 @@ export default function App() {
 
   const activeTab: Tab = pathname.startsWith("/market")
     ? "market"
-      : pathname.startsWith("/price-model")
-        ? "price-model"
+    : pathname.startsWith("/price-model")
+      ? "price-model"
       : pathname.startsWith("/config")
         ? "config"
         : "squad";
 
   return (
-    <div className="min-h-screen bg-[#f5f7fb] text-slate-900">
-      <header className="border-b border-indigo-100 bg-white/90 px-4 backdrop-blur sm:px-6">
-        <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-2 py-2">
+    <div className="min-h-screen bg-[#F2F2F2] text-[#444]">
+      <header className="border-b border-[#ddd] bg-white px-4 backdrop-blur sm:px-6">
+        <div className="mx-auto flex min-h-16 max-w-7xl flex-col items-start justify-between gap-3 py-4 sm:flex-row sm:items-center">
           <Link
             to="/squad"
-            className="text-lg font-bold tracking-tight text-slate-950 no-underline sm:text-xl"
+            className="text-lg font-bold tracking-tight text-[#444] no-underline sm:text-xl"
           >
             HT Manager
           </Link>
-          <nav className="flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1">
+          <nav className="grid w-full grid-cols-2 gap-1 rounded-xl bg-[#f2f2f2] p-1 sm:flex sm:w-auto">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
+                aria-current={activeTab === tab.id ? "page" : undefined}
                 onClick={() => navigate(tab.path)}
-                className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+                className={`min-h-11 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5B955F] ${
                   activeTab === tab.id
-                    ? "bg-white text-indigo-700 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "bg-[#5B955F] text-white shadow-sm"
+                    : "text-[#666] hover:bg-white hover:text-[#444]"
                 }`}
               >
                 {tab.label}
@@ -73,7 +69,7 @@ export default function App() {
           </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto max-w-7xl px-3 py-5 sm:px-6 sm:py-6">
         <Routes>
           <Route path="/" element={<Navigate to="/squad" replace />} />
           <Route path="/squad" element={<PlayersPage />} />
@@ -81,11 +77,7 @@ export default function App() {
           <Route path="/market/analytics" element={<MarketAnalyticsPage />} />
           <Route
             path="/market"
-            element={
-              <MarketStudiesPage
-                onStudyClick={(id) => navigate(`/market/${id}`)}
-              />
-            }
+            element={<MarketStudiesPage onStudyClick={(id) => navigate(`/market/${id}`)} />}
           />
           <Route path="/market/:studyId" element={<MarketStudyRoute />} />
           <Route path="/price-model" element={<PriceModelPage />} />
