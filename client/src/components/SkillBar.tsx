@@ -1,11 +1,11 @@
 import { skillLabel, skillColor } from "../lib/skills";
-import type { PlayerChange } from "../lib/types";
+import type { SkillChange, PlayerChange } from "../lib/types";
 
 interface SkillBarProps {
   label: string;
   level: number;
   maxLevel?: number;
-  change?: PlayerChange;
+  change?: SkillChange | PlayerChange;
   variant?: "graded" | "hattrick";
 }
 
@@ -17,35 +17,76 @@ export function SkillBar({
   variant = "graded",
 }: SkillBarProps) {
   const pct = Math.max(0, Math.min((level / maxLevel) * 100, 100));
-  const color = skillColor(level);
+  const color = skillColor(level, maxLevel);
   const levelLabel = skillLabel(level);
 
   if (variant === "hattrick") {
-    const delta = change ? Number(change.newValue) - Number(change.oldValue) : 0;
+    const previous = change ? Number(change.oldValue) : level;
+    const delta = Number.isFinite(previous) ? level - previous : 0;
+    const previousPct = Number.isFinite(previous)
+      ? Math.max(0, Math.min((previous / maxLevel) * 100, 100))
+      : pct;
+    const palette =
+      maxLevel === 8
+        ? level >= 7
+          ? { base: "#5B955F", dark: "#346238", light: "#BDD6BF" }
+          : level >= 5
+            ? { base: "#C3A12D", dark: "#887019", light: "#F0DFA2" }
+            : level >= 3
+              ? { base: "#CB762E", dark: "#914B15", light: "#F1C8A6" }
+              : { base: "#C75050", dark: "#8D2D2D", light: "#EDBABA" }
+        : { base: "#5B955F", dark: "#346238", light: "#BDD6BF" };
+    const changeLabel = delta
+      ? `${delta > 0 ? "+" : ""}${delta} since previous training period (${previous} → ${level})`
+      : undefined;
     return (
-      <div className="grid grid-cols-[80px_minmax(0,1fr)_24px] items-center gap-2 text-[13px] sm:grid-cols-[88px_minmax(0,1fr)_24px]">
+      <div
+        title={changeLabel}
+        className="grid grid-cols-[80px_minmax(0,1fr)_24px] items-center gap-2 text-[13px] sm:grid-cols-[88px_minmax(0,1fr)_24px]"
+      >
         <span className="text-right text-[#555]">{label}</span>
-        <div className="relative h-6 min-w-0 bg-[#ECECEC]">
-          <div className="absolute inset-y-0 left-0 bg-[#5B955F]" style={{ width: `${pct}%` }} />
-          <span className="relative flex h-full items-center whitespace-nowrap px-1.5 text-[11px] font-medium text-[#1e3520]">
+        <div className="relative h-6 min-w-0 overflow-hidden bg-[#ECECEC]">
+          <div
+            className="absolute inset-y-0 left-0"
+            style={{ width: `${pct}%`, backgroundColor: palette.base }}
+          />
+          {delta !== 0 && (
+            <div
+              aria-hidden="true"
+              data-change={delta > 0 ? "increase" : "decrease"}
+              className="absolute inset-y-0"
+              style={{
+                left: `${Math.min(pct, previousPct)}%`,
+                width: `${Math.abs(pct - previousPct)}%`,
+                backgroundColor: delta > 0 ? palette.dark : palette.light,
+              }}
+            />
+          )}
+          <span className="absolute inset-0 flex items-center whitespace-nowrap px-1.5 text-[11px] font-medium text-[#426e46]">
+            {levelLabel}
+          </span>
+          <span
+            aria-hidden="true"
+            className="absolute inset-0 flex items-center whitespace-nowrap px-1.5 text-[11px] font-medium text-white"
+            style={{ clipPath: `inset(0 ${100 - pct}% 0 0)` }}
+          >
             {levelLabel}
           </span>
         </div>
-        <span
-          className="text-right tabular-nums text-[#555]"
-          title={delta ? `Change: ${delta > 0 ? "+" : ""}${delta}` : undefined}
-        >
+        <span className="text-right font-medium tabular-nums text-[#426e46]">
           {level}
+          {changeLabel && <span className="sr-only"> · {changeLabel}</span>}
         </span>
       </div>
     );
   }
 
-  const changeDir = change
-    ? Number(change.newValue) > Number(change.oldValue)
-      ? "up"
-      : "down"
-    : null;
+  const changeDir =
+    change && Number(change.newValue) !== Number(change.oldValue)
+      ? Number(change.newValue) > Number(change.oldValue)
+        ? "up"
+        : "down"
+      : null;
 
   return (
     <div className="flex items-center gap-2 text-sm">

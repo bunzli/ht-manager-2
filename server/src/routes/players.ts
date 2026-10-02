@@ -3,6 +3,8 @@ import { PrismaClient } from "@prisma/client";
 import { ChppClient } from "../chpp/client";
 import { asyncHandler } from "../lib/asyncHandler";
 import { parseIntParam, errorResponse } from "../lib/routeUtils";
+import { avatarSnapshotData } from "../services/avatar.service";
+import { getSquadTsiHistory } from "../services/squadHistory.service";
 import {
   getPlayersFromDb,
   refreshPlayersFromChpp,
@@ -33,6 +35,47 @@ export function createPlayersRouter(prisma: PrismaClient, chpp: ChppClient) {
         res.json(result);
       } catch (err) {
         errorResponse(res, "Failed to refresh players", err);
+      }
+    }),
+  );
+
+  router.get(
+    "/avatars",
+    asyncHandler(async (_req: Request, res: Response) => {
+      const teamId = process.env.CHPP_TEAM_ID;
+      if (!teamId) throw new Error("CHPP_TEAM_ID not configured");
+      try {
+        const avatars = await chpp.getAvatars(teamId);
+        res.json(
+          avatars.players.map((avatar) => ({
+            playerId: avatar.playerId,
+            ...avatarSnapshotData(avatar, null),
+          })),
+        );
+      } catch (err) {
+        errorResponse(res, "Failed to read player avatars", err);
+      }
+    }),
+  );
+
+  router.get(
+    "/countries",
+    asyncHandler(async (_req: Request, res: Response) => {
+      try {
+        res.json(await chpp.getCountries());
+      } catch (err) {
+        errorResponse(res, "Failed to read nationalities", err);
+      }
+    }),
+  );
+
+  router.get(
+    "/tsi-history",
+    asyncHandler(async (_req: Request, res: Response) => {
+      try {
+        res.json(await getSquadTsiHistory(prisma));
+      } catch (err) {
+        errorResponse(res, "Failed to read squad TSI history", err);
       }
     }),
   );

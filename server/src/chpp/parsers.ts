@@ -13,6 +13,7 @@ import {
   ChppAvatarLayer,
   ChppPlayerAvatar,
   ChppAvatarsResponse,
+  ChppCountry,
 } from "./types";
 
 /**
@@ -416,6 +417,20 @@ function parseTransfer(t: Record<string, unknown>): PlayerTransfer {
     Price: toInt(t.Price),
     TSI: toInt(t.TSI),
   };
+}
+
+export function parseWorldCountries(data: Record<string, unknown>): ChppCountry[] {
+  const hd = data.HattrickData as Record<string, unknown>;
+  const leagueList = hd.LeagueList as Record<string, unknown>;
+  const leagues = ensureArray(leagueList?.League as Record<string, unknown>[] | Record<string, unknown>);
+  return leagues.flatMap((league) => {
+    const country = league.Country as Record<string, unknown> | undefined;
+    const countryId = toInt(country?.CountryID);
+    const leagueId = toInt(league.LeagueID);
+    return countryId > 0 && leagueId > 0
+      ? [{ countryId, leagueId, name: String(league.EnglishName ?? country?.CountryName ?? league.LeagueName ?? "") }]
+      : [];
+  });
 }
 
 export function parseAvatars(data: Record<string, unknown>): ChppAvatarsResponse {

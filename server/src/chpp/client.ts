@@ -10,6 +10,7 @@ import {
   TransferSearchResponse,
   PlayerTransfersResponse,
   ChppAvatarsResponse,
+  ChppCountry,
 } from "./types";
 import {
   parsePlayers,
@@ -19,6 +20,7 @@ import {
   parseTransferSearch,
   parsePlayerTransfers,
   parseAvatars,
+  parseWorldCountries,
   parseTraining,
 } from "./parsers";
 
@@ -35,6 +37,7 @@ export class ChppClient {
   private oauth: OAuth;
   private token: OAuth.Token;
   private xmlParser: XMLParser;
+  private countriesCache: { expiresAt: number; countries: ChppCountry[] } | null = null;
 
   constructor(config: ChppClientConfig) {
     this.oauth = new OAuth({
@@ -196,6 +199,16 @@ export class ChppClient {
 
     const data = await this.request(reqParams);
     return parseTransferSearch(data);
+  }
+
+  async getCountries(): Promise<ChppCountry[]> {
+    if (this.countriesCache && this.countriesCache.expiresAt > Date.now()) {
+      return this.countriesCache.countries;
+    }
+    const data = await this.request({ file: "worlddetails", version: "1.9" });
+    const countries = parseWorldCountries(data);
+    this.countriesCache = { expiresAt: Date.now() + 24 * 60 * 60 * 1000, countries };
+    return countries;
   }
 
   async getAvatars(teamId: number | string): Promise<ChppAvatarsResponse> {

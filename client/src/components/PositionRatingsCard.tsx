@@ -19,9 +19,15 @@ interface Props {
   player: Player;
   onOverrideChange?: (positionId: string | null) => void;
   overrideSaving?: boolean;
+  positionRank?: number;
 }
 
-export function PositionRatingsCard({ player, onOverrideChange, overrideSaving }: Props) {
+export function PositionRatingsCard({
+  player,
+  onOverrideChange,
+  overrideSaving,
+  positionRank,
+}: Props) {
   const scores = POSITION_RATINGS.map((pos) => ({
     pos,
     score: player.positionScores[pos.id] ?? 0,
@@ -41,6 +47,11 @@ export function PositionRatingsCard({ player, onOverrideChange, overrideSaving }
             Weighted effective skill per position, adjusted for form, stamina, experience &amp;
             specialty (normal orders)
           </p>
+          {positionRank != null && (
+            <p className="mt-2 text-xs font-medium text-[#507653]">
+              Position rank: #{positionRank} in the squad
+            </p>
+          )}
         </div>
 
         {onOverrideChange && (

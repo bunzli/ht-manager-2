@@ -14,6 +14,7 @@ import {
 } from "./training.service";
 import { estimateTrainingWeeks } from "../lib/trainingForecast";
 import { calculateTsiVariations } from "../lib/squadMetrics";
+import { calculateTrainingComparison, type TrainingSnapshot } from "../lib/trainingComparison";
 import { predictForPlayerDetails } from "./pricePredictor.service";
 import { avatarSnapshotData, fetchSquadAvatars } from "./avatar.service";
 import { syncRecentMatches } from "./match.service";
@@ -124,7 +125,20 @@ async function buildPlayersWithChanges(
   const [snapshots, tsiChanges] = await Promise.all([
     prisma.playerDetails.findMany({
       where: { playerId: { in: playerIds } },
-      select: { playerId: true, fetchedAt: true, tsi: true },
+      select: {
+        playerId: true,
+        fetchedAt: true,
+        tsi: true,
+        playerForm: true,
+        staminaSkill: true,
+        keeperSkill: true,
+        defenderSkill: true,
+        playmakerSkill: true,
+        wingerSkill: true,
+        passingSkill: true,
+        scorerSkill: true,
+        setPiecesSkill: true,
+      },
       orderBy: { fetchedAt: "desc" },
     }),
     prisma.playerChange.findMany({
@@ -132,7 +146,7 @@ async function buildPlayersWithChanges(
       orderBy: { detectedAt: "desc" },
     }),
   ]);
-  const snapshotsByPlayer = new Map<number, Array<{ fetchedAt: Date; tsi: number }>>();
+  const snapshotsByPlayer = new Map<number, TrainingSnapshot[]>();
   for (const snapshot of snapshots) {
     const rows = snapshotsByPlayer.get(snapshot.playerId) ?? [];
     rows.push(snapshot);
@@ -156,6 +170,10 @@ async function buildPlayersWithChanges(
       });
       return {
         ...withPositionScores(details),
+        ...calculateTrainingComparison(
+          details as unknown as TrainingSnapshot,
+          snapshotsByPlayer.get(playerId) ?? [],
+        ),
         ...calculateTsiVariations(
           details["tsi"] as number,
           snapshotsByPlayer.get(playerId) ?? [],
@@ -434,6 +452,8 @@ export async function getPlayerDetail(
     select: {
       fetchedAt: true,
       tsi: true,
+      playerForm: true,
+      staminaSkill: true,
       salary: true,
       keeperSkill: true,
       playmakerSkill: true,
@@ -447,6 +467,7 @@ export async function getPlayerDetail(
   const tsiChanges = allChanges.filter((change) => change.key === "tsi");
   Object.assign(
     player,
+    calculateTrainingComparison(tracking.latestDetails, snapshots),
     calculateTsiVariations(Number(tracking.latestDetails.tsi), [...snapshots].reverse()),
     {
       tsiLatestChange: tsiChanges.length

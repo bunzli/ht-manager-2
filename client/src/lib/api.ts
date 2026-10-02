@@ -1,5 +1,8 @@
 import {
   PlayersResponse,
+  SquadTsiHistoryPoint,
+  PlayerAvatarData,
+  Country,
   PlayerDetailResponse,
   TransferSearchParams,
   TransferSearchResponse,
@@ -51,6 +54,18 @@ async function patchJson<T>(path: string, body: unknown): Promise<T> {
 
 export function fetchPlayers(): Promise<PlayersResponse> {
   return fetchJson<PlayersResponse>("/players");
+}
+
+export function fetchSquadTsiHistory(): Promise<SquadTsiHistoryPoint[]> {
+  return fetchJson<SquadTsiHistoryPoint[]>("/players/tsi-history");
+}
+
+export function fetchPlayerAvatars(): Promise<PlayerAvatarData[]> {
+  return fetchJson<PlayerAvatarData[]>("/players/avatars");
+}
+
+export function fetchCountries(): Promise<Country[]> {
+  return fetchJson<Country[]>("/players/countries");
 }
 
 export function refreshPlayers(): Promise<PlayersResponse> {

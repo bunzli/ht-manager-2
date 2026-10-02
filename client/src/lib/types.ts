@@ -7,6 +7,20 @@ export interface PlayerChange {
   newValue: string;
 }
 
+export type SkillChange = Pick<PlayerChange, "oldValue" | "newValue">;
+
+export interface PlayerAvatarData {
+  playerId: number;
+  avatarBackground: string;
+  avatarLayers: string;
+}
+
+export interface Country {
+  countryId: number;
+  leagueId: number;
+  name: string;
+}
+
 export interface Player {
   id: number;
   playerId: number;
@@ -27,6 +41,8 @@ export interface Player {
   isAbroad: boolean;
   specialty: number;
   countryId?: number;
+  countryName?: string;
+  countryFlagId?: number;
   avatarBackground?: string;
   avatarLayers?: string;
   cards: number;
@@ -58,6 +74,9 @@ export interface Player {
   tsiVariationMonthPct?: number | null;
   tsiVariationQuarterPct?: number | null;
   tsiLatestChange?: number | null;
+  trainingBaselineAt?: string | null;
+  tsiVariationTraining?: number | null;
+  trainingChanges?: Partial<Record<string, SkillChange>>;
 }
 
 export interface TrainingProgress {
@@ -104,6 +123,12 @@ export interface PlayersResponse {
   teamName: string;
   fetchedAt: string | null;
   players: Player[];
+}
+
+export interface SquadTsiHistoryPoint {
+  at: string;
+  tsi: number;
+  playerCount: number;
 }
 
 export interface PlayerDetailResponse {

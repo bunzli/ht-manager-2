@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Player } from "../lib/types";
+import { hattrickImageUrl } from "../lib/hattrickImages";
 
 interface Layer {
   x: number;
@@ -32,7 +33,7 @@ export function PlayerAvatar({ player }: { player: Player }) {
 
 function Avatar({ player }: { player: Player }) {
   const [failed, setFailed] = useState(false);
-  const [size, setSize] = useState({ width: 92, height: 123 });
+  const [size, setSize] = useState({ width: 110, height: 155 });
   const layers = avatarLayers(player.avatarLayers);
   const hasImage = !!player.avatarBackground || layers.length > 0;
   return (
@@ -48,7 +49,7 @@ function Avatar({ player }: { player: Player }) {
         >
           {player.avatarBackground && (
             <img
-              src={player.avatarBackground}
+              src={hattrickImageUrl(player.avatarBackground)}
               alt=""
               onError={() => setFailed(true)}
               onLoad={(event) =>
@@ -63,7 +64,7 @@ function Avatar({ player }: { player: Player }) {
           {layers.map((layer, index) => (
             <img
               key={index}
-              src={layer.image}
+              src={hattrickImageUrl(layer.image)}
               alt=""
               onError={() => setFailed(true)}
               className="absolute max-w-none"
