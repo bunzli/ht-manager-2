@@ -228,3 +228,109 @@ model PriceModel {
 
   @@map("price_model")
 }
+
+// Youth IDs belong to a separate Hattrick system from senior player/match IDs.
+model YouthAcademy {
+  youthTeamId     Int           @id
+  seniorTeamId    Int
+  name            String
+  fetchedAt       DateTime?
+  matchesSyncedAt DateTime?
+  players         YouthPlayer[]
+  matches         YouthMatch[]
+
+  @@index([seniorTeamId])
+  @@map("youth_academy")
+}
+
+model YouthPlayer {
+  id            Int             @id @default(autoincrement())
+  youthPlayerId Int
+  youthTeamId   Int
+  academy       YouthAcademy    @relation(fields: [youthTeamId], references: [youthTeamId])
+  isActive      Boolean         @default(true)
+  archivedAt    DateTime?
+  snapshots     YouthSnapshot[]
+  changes       YouthChange[]
+
+  @@unique([youthTeamId, youthPlayerId])
+  @@map("youth_player")
+}
+
+model YouthSnapshot {
+  id        Int         @id @default(autoincrement())
+  playerId  Int
+  player    YouthPlayer @relation(fields: [playerId], references: [id])
+  fetchedAt DateTime
+  firstName String
+  nickName  String
+  lastName  String
+  age       Int
+  ageDays   Int
+  specialty Int?
+  // Typed JSON: nullable current/potential and visibility/max flags per skill.
+  skills    String
+  lastMatch String?
+
+  @@index([playerId, fetchedAt])
+  @@map("youth_snapshot")
+}
+
+model YouthChange {
+  id         Int         @id @default(autoincrement())
+  playerId   Int
+  player     YouthPlayer @relation(fields: [playerId], references: [id])
+  detectedAt DateTime
+  kind       String
+  key        String
+  oldValue   String?
+  newValue   String?
+
+  @@index([playerId, detectedAt])
+  @@map("youth_change")
+}
+
+model YouthMatch {
+  id              Int               @id @default(autoincrement())
+  youthTeamId     Int
+  academy         YouthAcademy      @relation(fields: [youthTeamId], references: [youthTeamId])
+  matchId         Int
+  matchDate       DateTime
+  matchType       Int
+  homeTeamId      Int
+  homeTeamName    String
+  awayTeamId      Int
+  awayTeamName    String
+  homeGoals       Int?
+  awayGoals       Int?
+  lineupFetchedAt DateTime?
+  appearances     YouthAppearance[]
+
+  @@unique([youthTeamId, matchId])
+  @@index([youthTeamId, matchDate])
+  @@map("youth_match")
+}
+
+model YouthAppearance {
+  id            Int        @id @default(autoincrement())
+  youthMatchId  Int
+  match         YouthMatch @relation(fields: [youthMatchId], references: [id], onDelete: Cascade)
+  youthPlayerId Int
+  roleId        Int
+  positionCode  Int?
+  behaviour     Int?
+  ratingStars   Float?
+  playedMinutes Int?
+
+  @@unique([youthMatchId, youthPlayerId])
+  @@index([youthPlayerId])
+  @@map("youth_appearance")
+}
+
+model YouthClubStatus {
+  seniorTeamId Int      @id
+  youthTeamId  Int?
+  checkedAt    DateTime
+
+  @@map("youth_club_status")
+}

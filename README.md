@@ -1,5 +1,18 @@
 # HT Manager
 
+## Youth Squad
+
+La pestaña **Youth Squad** sigue la academia asociada a `CHPP_TEAM_ID`.
+**Refresh youth squad** guarda las habilidades actuales y potenciales, detecta
+descubrimientos y mejoras, e importa los partidos juveniles de los últimos 90 días
+en la primera actualización. Las siguientes actualizaciones consultan desde la
+última sincronización de partidos y reintentan alineaciones pendientes.
+El historial de habilidades comienza con la primera consulta; los juveniles que
+salen de la academia quedan en **Archived** con su historial completo.
+
+Ejecuta `npm run db:migrate` al actualizar un checkout existente. La imagen de
+producción aplica la migración PostgreSQL al arrancar, como las anteriores.
+
 ## Desarrollo local y worktrees
 
 Desde la raíz de cualquier checkout o worktree:

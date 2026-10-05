@@ -13,11 +13,14 @@ import { MarketStudyInfoPage } from "./pages/MarketStudyInfoPage";
 import { MarketAnalyticsPage } from "./pages/MarketAnalyticsPage";
 import { PriceModelPage } from "./pages/PriceModelPage";
 import { ConfigPage } from "./pages/ConfigPage";
+import { YouthSquadPage } from "./pages/YouthSquadPage";
+import { YouthPlayerPage } from "./pages/YouthPlayerPage";
 
-type Tab = "squad" | "market" | "price-model" | "config";
+type Tab = "squad" | "youth" | "market" | "price-model" | "config";
 
 const TABS: { id: Tab; label: string; path: string }[] = [
   { id: "squad", label: "Squad", path: "/squad" },
+  { id: "youth", label: "Youth Squad", path: "/youth" },
   { id: "market", label: "Market Studies", path: "/market" },
   { id: "price-model", label: "Price Model", path: "/price-model" },
   { id: "config", label: "Config", path: "/config" },
@@ -39,7 +42,9 @@ export default function App() {
       ? "price-model"
       : pathname.startsWith("/config")
         ? "config"
-        : "squad";
+        : pathname.startsWith("/youth")
+          ? "youth"
+          : "squad";
 
   return (
     <div className="min-h-screen bg-[#F2F2F2] text-[#444]">
@@ -73,6 +78,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/squad" replace />} />
           <Route path="/squad" element={<PlayersPage />} />
+          <Route path="/youth" element={<YouthSquadPage />} />
+          <Route path="/youth/players/:id" element={<YouthPlayerPage />} />
           <Route path="/config" element={<ConfigPage />} />
           <Route path="/market/analytics" element={<MarketAnalyticsPage />} />
           <Route
