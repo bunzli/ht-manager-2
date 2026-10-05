@@ -11,12 +11,18 @@ import {
 } from "../lib/trainingProgress";
 
 export async function getTeamSettings(prisma: PrismaClient) {
-  const settings = await prisma.teamSettings.upsert({
+  const settings = await prisma.teamSettings.findUnique({
     where: { id: 1 },
-    update: {},
-    create: { id: 1 },
   });
-  return settings;
+  return settings ?? {
+    id: 1,
+    trainingTypeId: null,
+    trainingFocusSkillKey: null,
+    estimateBaseWeeks: null,
+    estimateAgeIncrementWeeks: null,
+    estimateSkillIncrementWeeks: null,
+    updatedAt: new Date(),
+  };
 }
 
 export async function updateTeamTrainingType(

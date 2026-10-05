@@ -17,13 +17,15 @@
     "test": "tsx --test src/lib/*.test.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "@prisma/client": "^6.6.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "fast-xml-parser": "^5.2.0",
     "node-cron": "^3.0.3",
-    "oauth-1.0a": "^2.2.6"
+    "oauth-1.0a": "^2.2.6",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

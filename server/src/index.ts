@@ -12,6 +12,7 @@ import { createMarketStudiesRouter } from "./routes/marketStudies";
 import { createPriceModelRouter } from "./routes/priceModel";
 import { createTrainingRouter } from "./routes/training";
 import { createYouthRouter } from "./routes/youth";
+import { createMcpRouter } from "./routes/mcp";
 import { startScheduler } from "./jobs/scheduler";
 import { globalErrorHandler } from "./lib/errorMiddleware";
 
@@ -19,6 +20,7 @@ const prisma = new PrismaClient();
 const chpp = createChppClient();
 
 const app = express();
+app.use("/mcp", createMcpRouter(prisma));
 app.use(cors());
 app.use(express.json());
 
