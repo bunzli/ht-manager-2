@@ -1,5 +1,29 @@
 # HT Manager
 
+## Production access
+
+Production requires one shared HTTP Basic username/password for the web app,
+static assets, and REST API. Browsers show their built-in login prompt; API
+clients must send `Authorization: Basic <base64(username:password)>`.
+Local development does not require this login.
+
+Before deploying the updated image, set `BASIC_AUTH_USERNAME` and
+`BASIC_AUTH_PASSWORD` in Dockge's environment/secret configuration. Both must
+be non-empty, and the username cannot contain `:`. Docker Compose passes these
+server-only values to the container. The production server refuses to start
+if they are missing or invalid; never commit real credentials to the repository.
+
+Keep public access behind the existing HTTPS reverse proxy, preserving the
+`Authorization` header. Basic authentication sends credentials on each request
+and depends on HTTPS to protect them in transit. No proxy authentication setup
+is required for this change.
+
+Only `GET /api/health` remains public for Docker health checks. `/mcp` keeps its
+separate bearer-token authentication described below; the shared web login does
+not grant MCP access. Rotate the web credentials by updating the Dockge values
+and recreating the container. Browsers using the old credentials will be
+prompted again.
+
 ## Read-only MCP server
 
 HT Manager exposes a standard MCP server at `/mcp` using Streamable HTTP with
@@ -68,7 +92,7 @@ server; existing clients must update their configured token.
 
 The endpoint reads only the club configured by `CHPP_TEAM_ID`. It exposes no
 refresh or mutation tools and never returns CHPP credentials. The MCP token
-protects `/mcp`; retain your existing access controls for the web app and REST API.
+protects `/mcp`; production HTTP Basic authentication protects the web app and REST API.
 
 Run `npm --prefix server test` for the server suite, including integration tests
 that initialize and call this endpoint with the official MCP client.
