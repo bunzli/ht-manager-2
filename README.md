@@ -1,5 +1,78 @@
 # HT Manager
 
+## Read-only MCP server
+
+HT Manager exposes a standard MCP server at `/mcp` using Streamable HTTP with
+stateless JSON responses. It works with clients that support this transport and
+a static bearer token. The protocol uses the
+[official TypeScript SDK](https://ts.sdk.modelcontextprotocol.io/server).
+
+The tools read the same saved data as HT Manager:
+
+| Tool | Inputs | Data |
+| --- | --- | --- |
+| `get_senior_squad` | None | Current tracked senior players, skills, training and position metrics, recent changes |
+| `get_senior_player` | `playerId`, optional `historyLimit` | Tracked player's details, skills and training history, changes and match appearances |
+| `get_youth_squad` | Optional `includeArchived` (default `false`) | Academy status, players, current and potential skills, recent changes |
+| `get_youth_player` | `playerId`, optional `historyLimit` | Active or archived player's details, skill history, changes and match appearances |
+
+Use the squad tools to discover Hattrick player IDs. `historyLimit` defaults to
+50 and accepts integers from 1 to 200. Player history collections are newest
+first, with a `truncated` flag for each collection. Results include snapshot
+timestamps; these are saved data, not live queries to Hattrick. Refresh squads
+through HT Manager when needed. Unknown youth skills remain `null`, distinct
+from a known skill of zero. Academy status distinguishes `not_synced`,
+`no_academy`, and `ready`.
+
+### Enable and connect
+
+1. Generate a token using `openssl rand -hex 32` and set `MCP_ACCESS_TOKEN` in
+   the main checkout's `.env` (local development) or Dockge's environment/secret
+   configuration (production). An empty token disables `/mcp` with HTTP 404.
+2. Set `MCP_ALLOWED_HOSTS` to comma-separated hostnames **without ports**, for
+   example `localhost,127.0.0.1,[::1],ht.example.com`. The defaults allow only
+   local hosts. Requests are checked against the actual `Host` header; a reverse
+   proxy should preserve that header, or its forwarded host must be explicitly
+   allowed. The MCP route does not trust `X-Forwarded-Host`.
+3. Restart HT Manager. For local development, `npm run dev` prints the API port;
+   use `http://127.0.0.1:<api-port>/mcp`. For remote clients, route
+   `https://ht.example.com/mcp` to the existing HT Manager server through your
+   HTTPS reverse proxy. Provisioning a domain, TLS, or a tunnel is separate.
+4. Configure the client's MCP server URL and header:
+   `Authorization: Bearer <MCP_ACCESS_TOKEN>`.
+
+For clients with an `mcpServers` configuration supporting remote URLs and headers:
+
+```json
+{
+  "mcpServers": {
+    "ht-manager": {
+      "url": "https://ht.example.com/mcp",
+      "headers": { "Authorization": "Bearer <your-token>" }
+    }
+  }
+}
+```
+
+Configuration syntax varies by client. Clients that only support OAuth login or
+local stdio cannot use this initial endpoint directly. A GET to `/mcp` returns
+405 after authentication; this is expected for a stateless JSON transport.
+Use MCP initialization, tool discovery and calls over POST to verify it.
+
+Browser clients must also have their exact `Origin` in `MCP_ALLOWED_ORIGINS`,
+for example `https://client.example.com`. The default is empty. Server clients
+that omit `Origin` do not need this setting. Only allowed origins receive CORS
+headers, and browser preflight requests expose no data. All actual MCP calls
+require authentication. Rotate the token by replacing it and restarting the
+server; existing clients must update their configured token.
+
+The endpoint reads only the club configured by `CHPP_TEAM_ID`. It exposes no
+refresh or mutation tools and never returns CHPP credentials. The MCP token
+protects `/mcp`; retain your existing access controls for the web app and REST API.
+
+Run `npm --prefix server test` for the server suite, including integration tests
+that initialize and call this endpoint with the official MCP client.
+
 ## Youth Squad
 
 La pestaña **Youth Squad** sigue la academia asociada a `CHPP_TEAM_ID`.

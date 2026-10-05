@@ -13,6 +13,9 @@ services:
       - CHPP_ACCESS_TOKEN=${CHPP_ACCESS_TOKEN}
       - CHPP_ACCESS_TOKEN_SECRET=${CHPP_ACCESS_TOKEN_SECRET}
       - CHPP_TEAM_ID=${CHPP_TEAM_ID}
+      - MCP_ACCESS_TOKEN=${MCP_ACCESS_TOKEN:-}
+      - MCP_ALLOWED_HOSTS=${MCP_ALLOWED_HOSTS:-localhost,127.0.0.1,[::1]}
+      - MCP_ALLOWED_ORIGINS=${MCP_ALLOWED_ORIGINS:-}
     networks:
       - shared_backend
     restart: unless-stopped

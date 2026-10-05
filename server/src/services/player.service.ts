@@ -352,9 +352,9 @@ export async function refreshPlayersFromChpp(
   return { ...result, teamId: response.TeamID, teamName: response.TeamName, fetchedAt: now.toISOString() };
 }
 
-async function attachTrainingProgress(
+async function attachTrainingProgress<T extends Record<string, unknown>>(
   prisma: PrismaClient,
-  players: Record<string, unknown>[],
+  players: T[],
   trainingTypeId: number,
   focusSkillKey: string | null,
   settings: Awaited<ReturnType<typeof getTeamSettings>>,
@@ -399,13 +399,15 @@ async function attachTrainingProgress(
 export async function getPlayerDetail(
   prisma: PrismaClient,
   playerId: number,
+  options: { requireTracked?: boolean; matchLimit?: number } = {},
 ) {
   const tracking = await prisma.playerTracking.findUnique({
     where: { playerId },
     include: { latestDetails: true },
   });
 
-  if (!tracking || !tracking.latestDetails) return null;
+  if (!tracking || !tracking.latestDetails || (options.requireTracked && !tracking.isTracking))
+    return null;
 
   const allChanges = await prisma.playerChange.findMany({
     where: { playerId },
@@ -479,6 +481,8 @@ export async function getPlayerDetail(
     at: snapshot.fetchedAt.toISOString(),
     tsi: snapshot.tsi,
     salary: snapshot.salary,
+    playerForm: snapshot.playerForm,
+    skills: Object.fromEntries(SKILL_FIELDS.map((key) => [key, snapshot[key]])),
     trainingSkill: focusSkillKey
       ? (snapshot as unknown as Record<string, number>)[focusSkillKey]
       : null,
@@ -488,7 +492,7 @@ export async function getPlayerDetail(
     where: { playerId },
     include: { teamMatch: true },
     orderBy: { teamMatch: { matchDate: "desc" } },
-    take: 10,
+    take: options.matchLimit ?? 10,
   });
   const configuredTeamId = Number(process.env.CHPP_TEAM_ID);
   const matches = appearances.map((appearance) => {
