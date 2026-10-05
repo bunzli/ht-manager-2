@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { parseYouthAcademy, parseYouthPlayers, youthArchiveTimestamp } from "./youth";
 import OAuth from "oauth-1.0a";
 import { XMLParser } from "fast-xml-parser";
 import {
@@ -74,7 +75,9 @@ export class ChppClient {
       searchParams.set(key, String(value));
     }
 
-    const url = `${BASE_URL}?${searchParams.toString()}`;
+    // oauth-1.0a decodes percent escapes but treats '+' as a literal character.
+    // Use %20 for spaces so timestamps are signed with their actual values.
+    const url = `${BASE_URL}?${searchParams.toString().replaceAll("+", "%20")}`;
     console.log(`[CHPP] → ${params.file} params:`, params);
 
     const authHeader = this.oauth.toHeader(
@@ -100,8 +103,52 @@ export class ChppClient {
     const xml = await response.text();
     console.log(`[CHPP] ← ${params.file} raw XML (first 500 chars):`, xml.slice(0, 500));
     const parsed = this.xmlParser.parse(xml) as Record<string, unknown>;
+    const envelope = parsed.HattrickData as Record<string, unknown> | undefined;
+    if (envelope?.Error) {
+      throw new Error(`CHPP error for ${params.file}: ${JSON.stringify(envelope.Error).slice(0, 300)}`);
+    }
     console.log(`[CHPP] ← ${params.file} parsed keys:`, Object.keys((parsed.HattrickData as Record<string, unknown>) ?? {}));
     return parsed;
+  }
+
+  async getYouthAcademy(seniorTeamId: number) {
+    return parseYouthAcademy(await this.request({
+      file: "teamdetails", version: "3.9", teamID: seniorTeamId,
+    }), seniorTeamId);
+  }
+
+  async getYouthPlayers(youthTeamId: number) {
+    return parseYouthPlayers(await this.request({
+      file: "youthplayerlist", version: "1.3", youthTeamID: youthTeamId,
+      actionType: "details", showLastMatch: "true",
+    }), youthTeamId);
+  }
+
+  async getYouthMatchesArchive(youthTeamId: number, start: Date, end: Date) {
+    const data = await this.request({
+      file: "matchesarchive", version: "1.4", teamID: youthTeamId, isYouth: "true",
+      FirstMatchDate: youthArchiveTimestamp(start), LastMatchDate: youthArchiveTimestamp(end),
+    });
+    const hd = data.HattrickData as Record<string, unknown> | undefined;
+    const team = hd?.Team as Record<string, unknown> | undefined;
+    if (!team || !("MatchList" in team)) throw new Error("Incomplete CHPP youth match archive");
+    const result = parseMatchesArchive(data);
+    if (result.TeamID !== youthTeamId) throw new Error("CHPP returned a different youth match archive");
+    return result;
+  }
+
+  async getYouthMatchLineup(matchId: number, youthTeamId: number) {
+    const data = await this.request({
+      file: "matchlineup", version: "2.1", matchID: matchId, teamID: youthTeamId, sourceSystem: "youth",
+    });
+    const result = parseMatchLineup(data);
+    if (result.TeamID !== youthTeamId || result.MatchID !== matchId) throw new Error("CHPP returned a different youth lineup");
+    // CHPP lineups usually expose RoleID, without a separate PositionCode.
+    result.Players = result.Players.map(player => ({
+      ...player,
+      PositionCode: player.PositionCode ?? (player.RoleID >= 100 && player.RoleID <= 113 ? player.RoleID : null),
+    }));
+    return result;
   }
 
   async getPlayers(teamId: number | string): Promise<ChppPlayersResponse> {
