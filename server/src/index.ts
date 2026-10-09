@@ -15,12 +15,15 @@ import { createYouthRouter } from "./routes/youth";
 import { createMcpRouter } from "./routes/mcp";
 import { startScheduler } from "./jobs/scheduler";
 import { globalErrorHandler } from "./lib/errorMiddleware";
+import { createProductionBasicAuth } from "./lib/basicAuth";
 
+const basicAuth = createProductionBasicAuth();
 const prisma = new PrismaClient();
 const chpp = createChppClient();
 
 const app = express();
 app.use("/mcp", createMcpRouter(prisma));
+app.use(basicAuth);
 app.use(cors());
 app.use(express.json());
 

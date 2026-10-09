@@ -8,6 +8,8 @@ services:
       - NODE_ENV=production
       # Inject this only through Dockge's secret/environment configuration.
       - DATABASE_URL
+      - BASIC_AUTH_USERNAME
+      - BASIC_AUTH_PASSWORD
       - CHPP_CONSUMER_KEY=${CHPP_CONSUMER_KEY}
       - CHPP_CONSUMER_SECRET=${CHPP_CONSUMER_SECRET}
       - CHPP_ACCESS_TOKEN=${CHPP_ACCESS_TOKEN}

@@ -12,6 +12,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { createMcpRouter, mcpConfigFromEnv } from "../routes/mcp";
 import { YOUTH_SKILLS } from "../chpp/youth";
 import { getTeamSettings, updateTrainingSettings } from "../services/training.service";
+import { createProductionBasicAuth } from "./basicAuth";
 
 function object(value: unknown): Record<string, unknown> {
   assert.ok(value && typeof value === "object" && !Array.isArray(value));
@@ -86,6 +87,13 @@ describe("read-only squad MCP over HTTP", () => {
     };
     app.use("/mcp", createMcpRouter(readOnlyPrisma, config));
     app.use("/disabled", createMcpRouter(readOnlyPrisma, { ...config, accessToken: "" }));
+    app.use(
+      createProductionBasicAuth({
+        NODE_ENV: "production",
+        BASIC_AUTH_USERNAME: "web-user",
+        BASIC_AUTH_PASSWORD: "web-password",
+      }),
+    );
     app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
     // Simulate the production frontend fallback; MCP errors must never reach it.
     app.get("*", (_req, res) => res.send("frontend"));
@@ -146,7 +154,13 @@ describe("read-only squad MCP over HTTP", () => {
   });
 
   it("requires authentication and rejects disallowed hosts and origins", async () => {
-    for (const authorization of [undefined, "Bearer wrong", "Basic credentials", "Bearer"]) {
+    for (const authorization of [
+      undefined,
+      "Bearer wrong",
+      "Basic credentials",
+      `Basic ${Buffer.from("web-user:web-password").toString("base64")}`,
+      "Bearer",
+    ]) {
       const response = await fetch(url, {
         method: "POST",
         headers: authorization ? { Authorization: authorization } : {},
