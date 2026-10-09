@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { SkillBar } from "./SkillBar";
 
@@ -90,8 +91,113 @@ export const TrainingChanges: Story = {
         variant="hattrick"
         change={{ oldValue: "8", newValue: "6" }}
       />
-      <SkillBar label="Keeper" level={0} variant="hattrick" />
-      <SkillBar label="Playmaking" level={20} variant="hattrick" />
+      <SkillBar
+        label="Unchanged"
+        level={6}
+        maxLevel={8}
+        variant="hattrick"
+        change={{ oldValue: "6", newValue: "6" }}
+      />
+      <SkillBar label="No baseline" level={6} maxLevel={8} variant="hattrick" />
+      <SkillBar
+        label="Invalid"
+        level={6}
+        maxLevel={8}
+        variant="hattrick"
+        change={{ oldValue: "invalid", newValue: "6" }}
+      />
+      <SkillBar
+        label="Empty"
+        level={6}
+        maxLevel={8}
+        variant="hattrick"
+        change={{ oldValue: "", newValue: "6" }}
+      />
+      <SkillBar
+        label="Keeper"
+        level={0}
+        variant="hattrick"
+        change={{ oldValue: "1", newValue: "0" }}
+      />
+      <SkillBar
+        label="Playmaking"
+        level={20}
+        variant="hattrick"
+        change={{ oldValue: "19", newValue: "20" }}
+      />
+    </div>
+  ),
+};
+
+function AnimationPreview() {
+  const [reversed, setReversed] = useState(false);
+  const [renders, setRenders] = useState(0);
+  const [level, setLevel] = useState(6);
+  const bars = [
+    { id: "form", label: "Form", level, maxLevel: 8, previous: 7 },
+    { id: "passing", label: "Passing", level: 10, maxLevel: 20, previous: 9 },
+  ];
+  return (
+    <div className="max-w-sm space-y-3">
+      <div className="flex flex-wrap gap-2 text-xs">
+        <button className="rounded border p-2" onClick={() => setRenders(renders + 1)}>
+          Rerender ({renders})
+        </button>
+        <button className="rounded border p-2" onClick={() => setReversed(!reversed)}>
+          Reverse order
+        </button>
+        <button className="rounded border p-2" onClick={() => setLevel(level === 6 ? 8 : 6)}>
+          Change form
+        </button>
+      </div>
+      {(reversed ? [...bars].reverse() : bars).map((bar) => (
+        <SkillBar
+          key={bar.id}
+          label={bar.label}
+          level={bar.level}
+          maxLevel={bar.maxLevel}
+          variant="hattrick"
+          change={{ oldValue: String(bar.previous), newValue: String(bar.level) }}
+        />
+      ))}
+      <p className="text-xs text-[#777]">Scroll down to reveal another weekly change.</p>
+      <div aria-hidden="true" className="h-screen" />
+      <SkillBar
+        label="Stamina"
+        level={4}
+        maxLevel={8}
+        variant="hattrick"
+        change={{ oldValue: "6", newValue: "4" }}
+      />
+    </div>
+  );
+}
+
+export const AnimationPlayback: Story = {
+  render: () => <AnimationPreview />,
+};
+
+export const ColorChanges: Story = {
+  render: () => (
+    <div className="max-w-sm space-y-3">
+      {[
+        { label: "Red → orange", previous: 2, level: 3 },
+        { label: "Orange → gold", previous: 4, level: 5 },
+        { label: "Gold → green", previous: 6, level: 7 },
+        { label: "Orange → red", previous: 3, level: 2 },
+        { label: "Gold → orange", previous: 5, level: 4 },
+        { label: "Green → gold", previous: 7, level: 6 },
+        { label: "Same color", previous: 5, level: 6 },
+      ].map(({ label, previous, level }) => (
+        <SkillBar
+          key={label}
+          label={label}
+          level={level}
+          maxLevel={8}
+          variant="hattrick"
+          change={{ oldValue: String(previous), newValue: String(level) }}
+        />
+      ))}
     </div>
   ),
 };
