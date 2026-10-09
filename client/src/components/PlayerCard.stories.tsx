@@ -105,3 +105,38 @@ export const WithAvatarAndNationality: Story = {
     },
   },
 };
+
+export const AnimationOnFullVisibility: Story = {
+  args: WithSkillChange.args,
+  render: (args) => (
+    <div>
+      <p className="text-xs text-[#777]">
+        Scroll until the entire player card is visible to animate its weekly changes.
+      </p>
+      <div aria-hidden="true" className="h-[70vh]" />
+      <PlayerCard {...args} />
+      <div aria-hidden="true" className="h-screen" />
+    </div>
+  ),
+};
+
+export const TsiDecrease: Story = {
+  args: {
+    player: {
+      ...mockPlayers[1],
+      tsi: 23780,
+      tsiVariationTraining: -400,
+      trainingBaselineAt: "2026-04-01T12:00:00Z",
+    },
+  },
+};
+
+export const TsiUnchanged: Story = {
+  args: {
+    player: {
+      ...mockPlayers[1],
+      tsiVariationTraining: 0,
+      trainingBaselineAt: "2026-04-01T12:00:00Z",
+    },
+  },
+};

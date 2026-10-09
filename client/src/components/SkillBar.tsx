@@ -1,3 +1,5 @@
+import { useRef } from "react";
+import { useTrainingAnimation } from "../lib/useTrainingAnimation";
 import { skillLabel, skillColor } from "../lib/skills";
 import type { SkillChange, PlayerChange } from "../lib/types";
 
@@ -21,64 +23,7 @@ export function SkillBar({
   const levelLabel = skillLabel(level);
 
   if (variant === "hattrick") {
-    const previous = change ? Number(change.oldValue) : level;
-    const delta = Number.isFinite(previous) ? level - previous : 0;
-    const previousPct = Number.isFinite(previous)
-      ? Math.max(0, Math.min((previous / maxLevel) * 100, 100))
-      : pct;
-    const palette =
-      maxLevel === 8
-        ? level >= 7
-          ? { base: "#5B955F", dark: "#346238", light: "#BDD6BF" }
-          : level >= 5
-            ? { base: "#C3A12D", dark: "#887019", light: "#F0DFA2" }
-            : level >= 3
-              ? { base: "#CB762E", dark: "#914B15", light: "#F1C8A6" }
-              : { base: "#C75050", dark: "#8D2D2D", light: "#EDBABA" }
-        : { base: "#5B955F", dark: "#346238", light: "#BDD6BF" };
-    const changeLabel = delta
-      ? `${delta > 0 ? "+" : ""}${delta} since previous training period (${previous} → ${level})`
-      : undefined;
-    return (
-      <div
-        title={changeLabel}
-        className="grid grid-cols-[80px_minmax(0,1fr)_24px] items-center gap-2 text-[13px] sm:grid-cols-[88px_minmax(0,1fr)_24px]"
-      >
-        <span className="text-right text-[#555]">{label}</span>
-        <div className="relative h-6 min-w-0 overflow-hidden bg-[#ECECEC]">
-          <div
-            className="absolute inset-y-0 left-0"
-            style={{ width: `${pct}%`, backgroundColor: palette.base }}
-          />
-          {delta !== 0 && (
-            <div
-              aria-hidden="true"
-              data-change={delta > 0 ? "increase" : "decrease"}
-              className="absolute inset-y-0"
-              style={{
-                left: `${Math.min(pct, previousPct)}%`,
-                width: `${Math.abs(pct - previousPct)}%`,
-                backgroundColor: delta > 0 ? palette.dark : palette.light,
-              }}
-            />
-          )}
-          <span className="absolute inset-0 flex items-center whitespace-nowrap px-1.5 text-[11px] font-medium text-[#426e46]">
-            {levelLabel}
-          </span>
-          <span
-            aria-hidden="true"
-            className="absolute inset-0 flex items-center whitespace-nowrap px-1.5 text-[11px] font-medium text-white"
-            style={{ clipPath: `inset(0 ${100 - pct}% 0 0)` }}
-          >
-            {levelLabel}
-          </span>
-        </div>
-        <span className="text-right font-medium tabular-nums text-[#426e46]">
-          {level}
-          {changeLabel && <span className="sr-only"> · {changeLabel}</span>}
-        </span>
-      </div>
-    );
+    return <HattrickSkillBar label={label} level={level} maxLevel={maxLevel} change={change} />;
   }
 
   const changeDir =
@@ -126,4 +71,80 @@ export function SkillBar({
       </span>
     </div>
   );
+}
+
+function HattrickSkillBar({ label, level, maxLevel = 20, change }: Omit<SkillBarProps, "variant">) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const fillRef = useRef<HTMLDivElement>(null);
+  const labelRef = useRef<HTMLSpanElement>(null);
+  const pct = Math.max(0, Math.min((level / maxLevel) * 100, 100));
+  const baseline = change?.oldValue.trim();
+  const parsedPrevious = baseline ? Number(baseline) : NaN;
+  const previous = Number.isFinite(parsedPrevious) ? parsedPrevious : level;
+  const delta = Number.isFinite(level) ? level - previous : 0;
+  const levelLabel = skillLabel(level);
+  const fillColor = hattrickFillColor(level, maxLevel);
+  const previousFillColor = hattrickFillColor(previous, maxLevel);
+  const changeLabel = delta
+    ? `${delta > 0 ? "+" : ""}${delta} since previous training period (${previous} → ${level})`
+    : undefined;
+
+  const display = useTrainingAnimation({
+    current: level,
+    previous,
+    targetRef: trackRef,
+    fillRef,
+    labelRef,
+    maxLevel,
+    fillColor,
+    previousFillColor,
+  });
+
+  return (
+    <div
+      title={changeLabel}
+      className="grid grid-cols-[80px_minmax(0,1fr)_56px] items-center gap-2 text-[13px] sm:grid-cols-[88px_minmax(0,1fr)_56px]"
+    >
+      <span className="text-right text-[#555]">{label}</span>
+      <div ref={trackRef} className="relative h-6 min-w-0 overflow-hidden bg-[#ECECEC]">
+        <div
+          ref={fillRef}
+          className="absolute inset-y-0 left-0"
+          style={{ width: `${pct}%`, backgroundColor: fillColor }}
+        />
+        <span className="absolute inset-0 flex items-center whitespace-nowrap px-1.5 text-[11px] font-medium text-[#426e46]">
+          {levelLabel}
+        </span>
+        <span
+          ref={labelRef}
+          aria-hidden="true"
+          className="absolute inset-0 flex items-center whitespace-nowrap px-1.5 text-[11px] font-medium text-white"
+          style={{ clipPath: `inset(0 ${100 - pct}% 0 0)` }}
+        >
+          {levelLabel}
+        </span>
+      </div>
+      <span className="flex items-center justify-end gap-1 whitespace-nowrap font-medium tabular-nums text-[#426e46]">
+        <span aria-hidden="true">{display.value}</span>
+        <span className="sr-only">{level}</span>
+        {display.complete && delta !== 0 && (
+          <span
+            aria-hidden="true"
+            className={`text-[11px] font-semibold ${delta > 0 ? "text-[#426e46]" : "text-[#b43d3d]"}`}
+          >
+            {delta > 0 ? "+" : "−"}
+            {Math.abs(delta)}
+          </span>
+        )}
+        {changeLabel && <span className="sr-only"> · {changeLabel}</span>}
+      </span>
+    </div>
+  );
+}
+
+function hattrickFillColor(level: number, maxLevel: number): string {
+  if (maxLevel !== 8 || level >= 7) return "#5B955F";
+  if (level >= 5) return "#C3A12D";
+  if (level >= 3) return "#CB762E";
+  return "#C75050";
 }

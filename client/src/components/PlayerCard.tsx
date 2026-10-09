@@ -1,9 +1,9 @@
 import { specialtyIcon, specialtyLabel } from "../lib/skills";
-import { formatNumber } from "../lib/format";
 import { getEffectivePosition } from "../lib/positionRatings";
 import { displayName, hattrickPlayerUrl } from "../lib/playerUtils";
 import type { Player } from "../lib/types";
 import { SkillBar } from "./SkillBar";
+import { PlayerTsi } from "./PlayerTsi";
 import { PlayerAvatar } from "./PlayerAvatar";
 import { hattrickImageUrl } from "../lib/hattrickImages";
 
@@ -27,7 +27,6 @@ export function PlayerCard({ player, selected, onClick }: PlayerCardProps) {
   const position = getEffectivePosition(player);
   const name = displayName(player);
   const specialtyImage = specialtyIcon(player.specialty);
-  const tsiDelta = player.tsiVariationTraining;
   const changes = player.trainingChanges;
   return (
     <article
@@ -59,20 +58,7 @@ export function PlayerCard({ player, selected, onClick }: PlayerCardProps) {
               />
             )}
           </h3>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm italic text-[#777]">
-            <span>TSI: {formatNumber(player.tsi)}</span>
-            <span
-              title={
-                player.trainingBaselineAt
-                  ? `Since previous training period · ${new Date(player.trainingBaselineAt).toLocaleString()}`
-                  : "No snapshot from the previous training period"
-              }
-              className={`text-xs font-semibold not-italic tabular-nums ${tsiDelta == null || tsiDelta === 0 ? "text-[#777]" : tsiDelta > 0 ? "text-[#426e46]" : "text-[#b43d3d]"}`}
-            >
-              {tsiDelta == null ? "(—)" : `(${tsiDelta > 0 ? "+" : ""}${formatNumber(tsiDelta)})`}
-              <span className="sr-only"> since previous training period</span>
-            </span>
-          </div>
+          <PlayerTsi player={player} />
           <p className="mt-1 text-xs text-[#777]">
             {player.age}y {player.ageDays}d
           </p>

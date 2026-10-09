@@ -140,7 +140,7 @@ export function PlayerList({
             {players.length} players · {activeSortLabel}
           </p>
           <p className="mt-1 text-[11px] text-[#777]">
-            Previous training period · darker = increase · lighter = decrease
+            Previous training period · bars animate changes · + increase · − decrease
           </p>
         </div>
         <div className="flex items-center gap-2">
